@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generador 3D de Ecuaciones Avanzado</title>
+    <title>Generador 3D de Ecuaciones</title>
     <style>
         body {
             margin: 0;
@@ -66,43 +66,6 @@
             border: 2px solid #00bcd4;
         }
         
-        #parameters {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            color: white;
-            z-index: 100;
-            background: rgba(0, 0, 0, 0.9);
-            padding: 15px;
-            border-radius: 10px;
-            backdrop-filter: blur(10px);
-            border: 2px solid #00bcd4;
-            min-width: 200px;
-        }
-        
-        .param-item {
-            margin: 10px 0;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .param-label {
-            font-size: 12px;
-            margin-bottom: 5px;
-            color: #00bcd4;
-            font-weight: bold;
-        }
-        
-        .param-value {
-            font-size: 11px;
-            color: #ccc;
-            margin-bottom: 3px;
-        }
-        
-        .param-slider {
-            width: 100%;
-        }
-        
         #controls {
             position: absolute;
             bottom: 20px;
@@ -114,7 +77,6 @@
             border-radius: 10px;
             backdrop-filter: blur(10px);
             border: 2px solid #00bcd4;
-            max-width: 200px;
         }
         
         #examples {
@@ -202,70 +164,37 @@
     <div id="container">
         <div id="header">
             <h1>DESIGN ENGINEERING CENTER</h1>
-            <h2>Generador 3D de Ecuaciones Matemáticas Avanzado</h2>
+            <h2>Generador 3D de Ecuaciones Matemáticas</h2>
         </div>
         
         <div id="equation-panel">
             <h3 style="margin: 0 0 15px 0; color: #00bcd4;">Generador 3D de Ecuaciones</h3>
             <label style="font-size: 14px; font-weight: bold;">Ecuación z = f(x, y):</label>
-            <input type="text" id="equation" value="A * sin(f*x + phi) * cos(f*y)" placeholder="Ej: A * sin(f*x + phi)">
+            <input type="text" id="equation" value="(y^2 - x^2) / 4" placeholder="Ej: sin(x) * cos(y)">
             <div id="equation-status"></div>
             <button onclick="generateSurface()">Generar Superficie</button>
             <button onclick="resetView()">Centrar Vista</button>
             
             <div id="equation-info">
-                <strong>Variables disponibles:</strong> x, y, A, f, phi, Border_Factor<br>
+                <strong>Variables disponibles:</strong> x, y<br>
                 <strong>Funciones:</strong> sin, cos, tan, log, exp, sqrt, abs, PI, E<br>
                 <strong>Operadores:</strong> +, -, *, /, ^, ( )<br>
-                <strong>Parámetros:</strong> Usa A, f, phi, Border_Factor para valores ajustables
+                <strong>Ejemplo:</strong> sin(sqrt(x^2 + y^2))
             </div>
         </div>
         
         <div id="examples">
             <h4 style="margin: 0 0 10px 0; color: #00bcd4;">Ejemplos Populares</h4>
-            <button class="example-btn" onclick="loadExample('(5*exp(-((x-2)^2+(y-2)^2)) - 1.5*exp(-(x^2+y^2)) + 0.5*(x - 1)^2 - 0.5*(y - 1)^2) * (1 - Border_Factor)')">Función G(x,y) Compleja</button>
-            <button class="example-btn" onclick="loadExample('A * (sin(f*x + phi) + sin(f*(-x/2 + y*sqrt(3)/2) + phi) + sin(f*(-x/2 - y*sqrt(3)/2) + phi)) / 3')">Ondas Triangulares</button>
-            <button class="example-btn" onclick="loadExample('A * sin(f*x + phi) * cos(f*y)')">Ondas Moduladas</button>
-            <button class="example-btn" onclick="loadExample('A * sin(f*sqrt(x^2 + y^2) + phi)')">Ondas Radiales</button>
-            <button class="example-btn" onclick="loadExample('A * exp(-(x^2 + y^2) / f)')">Campana Gaussiana</button>
             <button class="example-btn" onclick="loadExample('(y^2 - x^2) / 4')">Paraboloide Hiperbólico</button>
-            <button class="example-btn" onclick="loadExample('A * cos(f*x + phi) * sin(f*y)')">Ondas Cruzadas</button>
-            <button class="example-btn" onclick="loadExample('A * sin(f*x*y + phi)')">Interferencia XY</button>
-            <button class="example-btn" onclick="loadExample('A * (sin(f*x) + cos(f*y) + phi)')">Ondas Sumadas</button>
-            <button class="example-btn" onclick="loadExample('A * exp(-f*sqrt(x^2 + y^2)) * sin(phi*sqrt(x^2 + y^2))')">Onda Amortiguada</button>
-        </div>
-
-        <div id="parameters">
-            <h4 style="margin: 0 0 15px 0; color: #00bcd4;">Parámetros Dinámicos</h4>
-            
-            <div class="param-item">
-                <div class="param-label">Amplitud (A)</div>
-                <div class="param-value" id="A-value">2.0</div>
-                <input type="range" id="A" class="param-slider" min="0.1" max="5" step="0.1" value="2">
-            </div>
-            
-            <div class="param-item">
-                <div class="param-label">Frecuencia (f)</div>
-                <div class="param-value" id="f-value">2.0</div>
-                <input type="range" id="f" class="param-slider" min="0.1" max="10" step="0.1" value="2">
-            </div>
-            
-            <div class="param-item">
-                <div class="param-label">Fase (phi)</div>
-                <div class="param-value" id="phi-value">0.0</div>
-                <input type="range" id="phi" class="param-slider" min="0" max="6.28" step="0.1" value="0">
-            </div>
-            
-            <div class="param-item">
-                <div class="param-label">Border Factor</div>
-                <div class="param-value" id="Border_Factor-value">0.1</div>
-                <input type="range" id="Border_Factor" class="param-slider" min="0" max="1" step="0.01" value="0.1">
-            </div>
-            
-            <div style="margin-top: 15px;">
-                <input type="checkbox" id="auto-update" checked>
-                <label for="auto-update" style="font-size: 11px; margin-left: 5px;">Actualización automática</label>
-            </div>
+            <button class="example-btn" onclick="loadExample('sin(sqrt(x^2 + y^2))')">Ondas Radiales</button>
+            <button class="example-btn" onclick="loadExample('sin(x) * cos(y)')">Silla de Montar Senoidal</button>
+            <button class="example-btn" onclick="loadExample('exp(-(x^2 + y^2) / 4)')">Campana de Gauss</button>
+            <button class="example-btn" onclick="loadExample('x^2 + y^2')">Paraboloide</button>
+            <button class="example-btn" onclick="loadExample('sin(x * y)')">Ondas Cruzadas</button>
+            <button class="example-btn" onclick="loadExample('cos(x) + sin(y)')">Ondas Sumadas</button>
+            <button class="example-btn" onclick="loadExample('abs(sin(x)) * abs(cos(y))')">Pirámides</button>
+            <button class="example-btn" onclick="loadExample('(x^2 + y^2) * exp(-(x^2 + y^2)/4)')">Volcán</button>
+            <button class="example-btn" onclick="loadExample('sin(3*x) * sin(3*y) / 3')">Rejilla</button>
         </div>
 
         <div id="controls">
@@ -295,14 +224,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
     <script>
         let scene, camera, renderer, surface, wireframe;
-        let currentEquation = "A * sin(f*x + phi) * cos(f*y)";
+        let currentEquation = "(y^2 - x^2) / 4";
         let showWireframe = true;
-        let parameters = {
-            A: 2.0,
-            f: 2.0,
-            phi: 0.0,
-            Border_Factor: 0.1
-        };
         let controls = {
             isMouseDown: false,
             mouseX: 0,
@@ -315,9 +238,6 @@
             // Crear escena
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0xf0f0f0);
-            
-            // Agregar niebla para mejor visualización
-            scene.fog = new THREE.Fog(0xf0f0f0, 10, 50);
 
             // Crear cámara
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -332,10 +252,7 @@
             document.getElementById('container').appendChild(renderer.domElement);
 
             // Generar superficie inicial
-            setTimeout(() => {
-                setupParameterControls();
-                generateSurface();
-            }, 100);
+            generateSurface();
 
             // Agregar luces
             addLights();
@@ -348,37 +265,6 @@
 
             // Iniciar animación
             animate();
-        }
-
-        function setupParameterControls() {
-            ['A', 'f', 'phi', 'Border_Factor'].forEach(param => {
-                document.getElementById(param).addEventListener('input', updateParameterValues);
-            });
-            
-            document.getElementById('auto-update').addEventListener('change', () => {
-                if (document.getElementById('auto-update').checked && currentEquation) {
-                    generateSurface();
-                }
-            });
-            
-            // Inicializar valores
-            updateParameterValues();
-        }
-
-        function updateParameterValues() {
-            parameters.A = parseFloat(document.getElementById('A').value);
-            parameters.f = parseFloat(document.getElementById('f').value);
-            parameters.phi = parseFloat(document.getElementById('phi').value);
-            parameters.Border_Factor = parseFloat(document.getElementById('Border_Factor').value);
-            
-            document.getElementById('A-value').textContent = parameters.A.toFixed(1);
-            document.getElementById('f-value').textContent = parameters.f.toFixed(1);
-            document.getElementById('phi-value').textContent = parameters.phi.toFixed(1);
-            document.getElementById('Border_Factor-value').textContent = parameters.Border_Factor.toFixed(2);
-            
-            if (document.getElementById('auto-update').checked && currentEquation) {
-                generateSurface();
-            }
         }
 
         function loadExample(equation) {
@@ -406,11 +292,10 @@
                 const testExpr = math.parse(equation);
                 const testCompiled = testExpr.compile();
                 
-                // Probar con valores de ejemplo incluyendo parámetros
-                const testScope = {x: 1, y: 1, A: parameters.A, f: parameters.f, phi: parameters.phi, Border_Factor: parameters.Border_Factor};
-                testCompiled.evaluate(testScope);
-                testCompiled.evaluate({x: 0, y: 0, A: parameters.A, f: parameters.f, phi: parameters.phi, Border_Factor: parameters.Border_Factor});
-                testCompiled.evaluate({x: -1, y: -1, A: parameters.A, f: parameters.f, phi: parameters.phi, Border_Factor: parameters.Border_Factor});
+                // Probar con valores de ejemplo
+                testCompiled.evaluate({x: 1, y: 1});
+                testCompiled.evaluate({x: 0, y: 0});
+                testCompiled.evaluate({x: -1, y: -1});
                 
                 return { success: true, compiled: testCompiled };
             } catch (error) {
@@ -496,15 +381,7 @@
             // Función para calcular z según la ecuación compilada
             function calculateZ(x, y) {
                 try {
-                    const scope = {
-                        x: x, 
-                        y: y, 
-                        A: parameters.A, 
-                        f: parameters.f, 
-                        phi: parameters.phi,
-                        Border_Factor: parameters.Border_Factor
-                    };
-                    const result = compiledEquation.evaluate(scope);
+                    const result = compiledEquation.evaluate({x: x, y: y});
                     if (typeof result !== 'number' || !isFinite(result)) {
                         return 0;
                     }
