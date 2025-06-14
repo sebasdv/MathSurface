@@ -181,7 +181,7 @@
             }
 
             #graph-container {
-                height: 300px;
+                height: 100vh;
                 margin: 10px 0;
                 transform: translateZ(0);
                 -webkit-transform: translateZ(0);
@@ -543,7 +543,7 @@
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
-                margin-top: 70px;
+                margin-top: 0;
             }
 
             .burger-menu {
@@ -621,9 +621,39 @@
                 background: #2c3e50;
             }
         }
+
+        /* Ajustes para el contenedor del gráfico */
+        #graph-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .burger-menu {
+            pointer-events: auto;
+        }
+
+        .side-menu {
+            pointer-events: auto;
+        }
+
+        .menu-overlay {
+            pointer-events: auto;
+        }
     </style>
 </head>
 <body>
+    <div id="graph-container"></div>
+
     <button class="burger-menu">
         <span></span>
         <span></span>
@@ -682,571 +712,154 @@
         </div>
     </div>
 
-    <div class="container">
-        <div id="graph-container"></div>
-    </div>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mathjs@9.4.4/lib/browser/math.min.js"></script>
     <script>
         let scene, camera, renderer, surface, wireframe;
-        let currentEquation = "A * sin(f*x + phi) * cos(f*y)";
-        let showWireframe = true;
-        let parameters = {
-            A: 2.0,
-            f: 2.0,
-            phi: 0.0,
-            Border_Factor: 0.1
-        };
-        let controls = {
-            isMouseDown: false,
-            mouseX: 0,
-            mouseY: 0,
-            rotationX: 0.3,
-            rotationY: 0.5
-        };
+        let isRotating = true;
+        let rotationSpeed = 0.01;
+        let lastTime = 0;
 
+        // Inicialización de Three.js
         function init() {
             // Crear escena
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xf0f0f0);
-            
-            // Agregar niebla para mejor visualización
-            scene.fog = new THREE.Fog(0xf0f0f0, 10, 50);
+            scene.background = new THREE.Color(0x1a1a1a);
 
             // Crear cámara
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(8, 8, 8);
-            camera.lookAt(0, 0, 0);
+            camera.position.z = 5;
 
             // Crear renderer
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            document.getElementById('container').appendChild(renderer.domElement);
+            document.getElementById('graph-container').appendChild(renderer.domElement);
 
-            // Generar superficie inicial
-            setTimeout(() => {
-                setupParameterControls();
-                generateSurface();
-            }, 100);
+            // Añadir luces
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
 
-            // Agregar luces
-            addLights();
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(1, 1, 1);
+            scene.add(directionalLight);
 
-            // Agregar ejes de coordenadas
-            addAxes();
+            // Crear superficie inicial
+            generateSurface();
 
-            // Event listeners
-            addEventListeners();
+            // Manejar redimensionamiento
+            window.addEventListener('resize', onWindowResize, false);
 
             // Iniciar animación
             animate();
         }
 
-        function setupParameterControls() {
-            ['A', 'f', 'phi', 'Border_Factor'].forEach(param => {
-                document.getElementById(param).addEventListener('input', updateParameterValues);
-            });
-            
-            document.getElementById('auto-update').addEventListener('change', () => {
-                if (document.getElementById('auto-update').checked && currentEquation) {
-                    generateSurface();
-                }
-            });
-            
-            // Inicializar valores
-            updateParameterValues();
+        // Función de animación
+        function animate(time = 0) {
+            requestAnimationFrame(animate);
+
+            if (isRotating && surface) {
+                const deltaTime = (time - lastTime) / 1000;
+                surface.rotation.y += rotationSpeed * deltaTime * 60;
+                lastTime = time;
+            }
+
+            renderer.render(scene, camera);
         }
 
-        function updateParameterValues() {
-            parameters.A = parseFloat(document.getElementById('A').value);
-            parameters.f = parseFloat(document.getElementById('f').value);
-            parameters.phi = parseFloat(document.getElementById('phi').value);
-            parameters.Border_Factor = parseFloat(document.getElementById('Border_Factor').value);
-            
-            document.getElementById('A-value').textContent = parameters.A.toFixed(1);
-            document.getElementById('f-value').textContent = parameters.f.toFixed(1);
-            document.getElementById('phi-value').textContent = parameters.phi.toFixed(1);
-            document.getElementById('Border_Factor-value').textContent = parameters.Border_Factor.toFixed(2);
-            
-            if (document.getElementById('auto-update').checked && currentEquation) {
-                generateSurface();
+        // Manejar redimensionamiento
+        function onWindowResize() {
+            const container = document.getElementById('graph-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        }
+
+        // Generar superficie
+        function generateSurface() {
+            if (surface) {
+                scene.remove(surface);
+                if (wireframe) scene.remove(wireframe);
+            }
+
+            const equation = document.getElementById('equation').value;
+            const resolution = parseInt(document.getElementById('resolution').value);
+            const scale = parseFloat(document.getElementById('scale').value);
+
+            try {
+                const geometry = new THREE.ParametricBufferGeometry((u, v, target) => {
+                    const x = (u - 0.5) * 10 * scale;
+                    const y = (v - 0.5) * 10 * scale;
+                    const z = math.evaluate(equation, { x, y });
+                    target.set(x, y, z);
+                }, resolution, resolution);
+
+                const material = new THREE.MeshPhongMaterial({
+                    color: 0x00bcd4,
+                    side: THREE.DoubleSide,
+                    wireframe: false
+                });
+
+                surface = new THREE.Mesh(geometry, material);
+                scene.add(surface);
+
+                // Crear wireframe
+                const wireframeMaterial = new THREE.MeshBasicMaterial({
+                    color: 0x000000,
+                    wireframe: true,
+                    transparent: true,
+                    opacity: 0.1
+                });
+
+                wireframe = new THREE.Mesh(geometry, wireframeMaterial);
+                scene.add(wireframe);
+
+            } catch (error) {
+                console.error('Error al generar la superficie:', error);
             }
         }
 
-        function loadExample(equation) {
+        // Cargar ejemplo
+        function setExample(equation) {
             document.getElementById('equation').value = equation;
             generateSurface();
         }
 
-        function resetView() {
-            controls.rotationX = 0.3;
-            controls.rotationY = 0.5;
-            camera.position.set(8, 8, 8);
-            updateCameraPosition();
-        }
-
-        function toggleWireframe() {
-            showWireframe = !showWireframe;
-            if (wireframe) {
-                wireframe.visible = showWireframe;
-            }
-        }
-
-        function validateAndParseEquation(equation) {
-            try {
-                // Crear una función de prueba
-                const testExpr = math.parse(equation);
-                const testCompiled = testExpr.compile();
-                
-                // Probar con valores de ejemplo incluyendo parámetros
-                const testScope = {x: 1, y: 1, A: parameters.A, f: parameters.f, phi: parameters.phi, Border_Factor: parameters.Border_Factor};
-                testCompiled.evaluate(testScope);
-                testCompiled.evaluate({x: 0, y: 0, A: parameters.A, f: parameters.f, phi: parameters.phi, Border_Factor: parameters.Border_Factor});
-                testCompiled.evaluate({x: -1, y: -1, A: parameters.A, f: parameters.f, phi: parameters.phi, Border_Factor: parameters.Border_Factor});
-                
-                return { success: true, compiled: testCompiled };
-            } catch (error) {
-                return { success: false, error: error.message };
-            }
-        }
-
-        function generateSurface() {
-            const equationText = document.getElementById('equation').value.trim();
-            const statusDiv = document.getElementById('equation-status');
-            
-            if (!equationText) {
-                statusDiv.innerHTML = '<div class="error">Por favor ingresa una ecuación</div>';
-                return;
-            }
-
-            const validation = validateAndParseEquation(equationText);
-            
-            if (!validation.success) {
-                statusDiv.innerHTML = `<div class="error">Error: ${validation.error}</div>`;
-                return;
-            }
-
-            statusDiv.innerHTML = '<div class="success">✓ Ecuación válida - Generando superficie...</div>';
-            currentEquation = equationText;
-            
-            setTimeout(() => {
-                try {
-                    createSurface(validation.compiled);
-                    statusDiv.innerHTML = '<div class="success">✓ Superficie generada correctamente</div>';
-                } catch (error) {
-                    statusDiv.innerHTML = `<div class="error">Error al generar: ${error.message}</div>`;
-                }
-            }, 100);
-        }
-
-        function createSurface(compiledEquation) {
-            const resolution = parseInt(document.getElementById('resolution').value);
-            const range = parseInt(document.getElementById('range').value);
-            const thickness = parseFloat(document.getElementById('thickness').value);
-            const zScale = parseFloat(document.getElementById('zScale').value);
-            const opacity = parseFloat(document.getElementById('opacity').value);
-
-            // Eliminar superficie anterior si existe
-            if (surface) scene.remove(surface);
-            if (wireframe) scene.remove(wireframe);
-
-            // Crear geometría sólida con espesor
-            const geometry = createSolidGeometry(resolution, range, thickness, zScale, compiledEquation);
-
-            // Material para la superficie
-            const material = new THREE.MeshPhongMaterial({
-                color: 0x00bcd4,
-                transparent: true,
-                opacity: opacity,
-                side: THREE.DoubleSide,
-                shininess: 100
-            });
-
-            surface = new THREE.Mesh(geometry, material);
-            surface.receiveShadow = true;
-            surface.castShadow = true;
-            scene.add(surface);
-
-            // Crear wireframe
-            const wireframeMaterial = new THREE.MeshBasicMaterial({
-                color: 0xffffff,
-                wireframe: true,
-                transparent: true,
-                opacity: 0.2
-            });
-
-            wireframe = new THREE.Mesh(geometry.clone(), wireframeMaterial);
-            wireframe.visible = showWireframe;
-            scene.add(wireframe);
-        }
-
-        function createSolidGeometry(resolution, range, thickness, zScale, compiledEquation) {
-            const geometry = new THREE.BufferGeometry();
-            const vertices = [];
-            const indices = [];
-            
-            // Función para calcular z según la ecuación compilada
-            function calculateZ(x, y) {
-                try {
-                    const scope = {
-                        x: x, 
-                        y: y, 
-                        A: parameters.A, 
-                        f: parameters.f, 
-                        phi: parameters.phi,
-                        Border_Factor: parameters.Border_Factor
-                    };
-                    const result = compiledEquation.evaluate(scope);
-                    if (typeof result !== 'number' || !isFinite(result)) {
-                        return 0;
-                    }
-                    return result * zScale;
-                } catch (error) {
-                    return 0;
-                }
-            }
-
-            // Crear grid de puntos
-            const step = (range * 2) / resolution;
-            const gridVertices = [];
-            
-            for (let i = 0; i <= resolution; i++) {
-                gridVertices[i] = [];
-                for (let j = 0; j <= resolution; j++) {
-                    const x = -range + i * step;
-                    const y = -range + j * step;
-                    const z = calculateZ(x, y);
-                    gridVertices[i][j] = { x, y, z };
-                }
-            }
-
-            // Agregar vértices de la superficie superior
-            for (let i = 0; i <= resolution; i++) {
-                for (let j = 0; j <= resolution; j++) {
-                    const vertex = gridVertices[i][j];
-                    vertices.push(vertex.x, vertex.y, vertex.z);
-                }
-            }
-
-            // Agregar vértices de la superficie inferior
-            for (let i = 0; i <= resolution; i++) {
-                for (let j = 0; j <= resolution; j++) {
-                    const vertex = gridVertices[i][j];
-                    vertices.push(vertex.x, vertex.y, vertex.z - thickness);
-                }
-            }
-
-            const pointsPerRow = resolution + 1;
-            const totalTopPoints = pointsPerRow * pointsPerRow;
-
-            // Crear caras para la superficie superior
-            for (let i = 0; i < resolution; i++) {
-                for (let j = 0; j < resolution; j++) {
-                    const a = i * pointsPerRow + j;
-                    const b = i * pointsPerRow + (j + 1);
-                    const c = (i + 1) * pointsPerRow + (j + 1);
-                    const d = (i + 1) * pointsPerRow + j;
-
-                    indices.push(a, b, c);
-                    indices.push(a, c, d);
-                }
-            }
-
-            // Crear caras para la superficie inferior (orden invertido)
-            for (let i = 0; i < resolution; i++) {
-                for (let j = 0; j < resolution; j++) {
-                    const a = totalTopPoints + i * pointsPerRow + j;
-                    const b = totalTopPoints + i * pointsPerRow + (j + 1);
-                    const c = totalTopPoints + (i + 1) * pointsPerRow + (j + 1);
-                    const d = totalTopPoints + (i + 1) * pointsPerRow + j;
-
-                    indices.push(a, c, b);
-                    indices.push(a, d, c);
-                }
-            }
-
-            // Crear caras laterales (bordes)
-            // Borde i = 0 (izquierdo)
-            for (let j = 0; j < resolution; j++) {
-                const topA = 0 * pointsPerRow + j;
-                const topB = 0 * pointsPerRow + (j + 1);
-                const bottomA = totalTopPoints + 0 * pointsPerRow + j;
-                const bottomB = totalTopPoints + 0 * pointsPerRow + (j + 1);
-
-                indices.push(topA, bottomA, topB);
-                indices.push(topB, bottomA, bottomB);
-            }
-
-            // Borde i = resolution (derecho)
-            for (let j = 0; j < resolution; j++) {
-                const topA = resolution * pointsPerRow + j;
-                const topB = resolution * pointsPerRow + (j + 1);
-                const bottomA = totalTopPoints + resolution * pointsPerRow + j;
-                const bottomB = totalTopPoints + resolution * pointsPerRow + (j + 1);
-
-                indices.push(topA, topB, bottomA);
-                indices.push(topB, bottomB, bottomA);
-            }
-
-            // Borde j = 0 (frontal)
-            for (let i = 0; i < resolution; i++) {
-                const topA = i * pointsPerRow + 0;
-                const topB = (i + 1) * pointsPerRow + 0;
-                const bottomA = totalTopPoints + i * pointsPerRow + 0;
-                const bottomB = totalTopPoints + (i + 1) * pointsPerRow + 0;
-
-                indices.push(topA, topB, bottomA);
-                indices.push(topB, bottomB, bottomA);
-            }
-
-            // Borde j = resolution (trasero)
-            for (let i = 0; i < resolution; i++) {
-                const topA = i * pointsPerRow + resolution;
-                const topB = (i + 1) * pointsPerRow + resolution;
-                const bottomA = totalTopPoints + i * pointsPerRow + resolution;
-                const bottomB = totalTopPoints + (i + 1) * pointsPerRow + resolution;
-
-                indices.push(topA, bottomA, topB);
-                indices.push(topB, bottomA, bottomB);
-            }
-
-            geometry.setIndex(indices);
-            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-            geometry.computeVertexNormals();
-
-            return geometry;
-        }
-
-        function addLights() {
-            // Luz ambiental
-            const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
-            scene.add(ambientLight);
-
-            // Luz direccional
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(10, 10, 5);
-            directionalLight.castShadow = true;
-            directionalLight.shadow.mapSize.width = 2048;
-            directionalLight.shadow.mapSize.height = 2048;
-            scene.add(directionalLight);
-
-            // Luz puntual colorida
-            const pointLight = new THREE.PointLight(0x00ffff, 0.5, 50);
-            pointLight.position.set(-5, 5, 5);
-            scene.add(pointLight);
-        }
-
-        function addAxes() {
-            // Eje X (rojo)
-            const xGeometry = new THREE.CylinderGeometry(0.02, 0.02, 10);
-            const xMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-            const xAxis = new THREE.Mesh(xGeometry, xMaterial);
-            xAxis.rotation.z = Math.PI / 2;
-            scene.add(xAxis);
-
-            // Eje Y (verde)
-            const yGeometry = new THREE.CylinderGeometry(0.02, 0.02, 10);
-            const yMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-            const yAxis = new THREE.Mesh(yGeometry, yMaterial);
-            scene.add(yAxis);
-
-            // Eje Z (azul)
-            const zGeometry = new THREE.CylinderGeometry(0.02, 0.02, 10);
-            const zMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
-            const zAxis = new THREE.Mesh(zGeometry, zMaterial);
-            zAxis.rotation.x = Math.PI / 2;
-            scene.add(zAxis);
-        }
-
-        function addEventListeners() {
-            // Controles de mouse
-            renderer.domElement.addEventListener('mousedown', onMouseDown);
-            renderer.domElement.addEventListener('mousemove', onMouseMove);
-            renderer.domElement.addEventListener('mouseup', onMouseUp);
-            renderer.domElement.addEventListener('wheel', onWheel);
-
-            // Controles de interfaz
-            document.getElementById('resolution').addEventListener('input', () => {
-                if (currentEquation) generateSurface();
-            });
-            document.getElementById('range').addEventListener('input', () => {
-                if (currentEquation) generateSurface();
-            });
-            document.getElementById('thickness').addEventListener('input', () => {
-                if (currentEquation) generateSurface();
-            });
-            document.getElementById('zScale').addEventListener('input', () => {
-                if (currentEquation) generateSurface();
-            });
-            document.getElementById('opacity').addEventListener('input', () => {
-                if (currentEquation) generateSurface();
-            });
-            
-            document.getElementById('exportSTL').addEventListener('click', exportSTL);
-            document.getElementById('equation').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') generateSurface();
-            });
-
-            // Redimensionar ventana
-            window.addEventListener('resize', onWindowResize);
-        }
-
-        function onMouseDown(event) {
-            controls.isMouseDown = true;
-            controls.mouseX = event.clientX;
-            controls.mouseY = event.clientY;
-        }
-
-        function onMouseMove(event) {
-            if (!controls.isMouseDown) return;
-
-            const deltaX = event.clientX - controls.mouseX;
-            const deltaY = event.clientY - controls.mouseY;
-
-            controls.rotationY += deltaX * 0.01;
-            controls.rotationX += deltaY * 0.01;
-
-            controls.rotationX = Math.max(-Math.PI/2, Math.min(Math.PI/2, controls.rotationX));
-
-            updateCameraPosition();
-
-            controls.mouseX = event.clientX;
-            controls.mouseY = event.clientY;
-        }
-
-        function onMouseUp(event) {
-            controls.isMouseDown = false;
-        }
-
-        function onWheel(event) {
-            const distance = camera.position.length();
-            const newDistance = distance + event.deltaY * 0.01;
-            
-            if (newDistance > 2 && newDistance < 50) {
-                const factor = newDistance / distance;
-                camera.position.multiplyScalar(factor);
-            }
-        }
-
-        function updateCameraPosition() {
-            const distance = camera.position.length();
-            camera.position.x = distance * Math.cos(controls.rotationX) * Math.cos(controls.rotationY);
-            camera.position.y = distance * Math.sin(controls.rotationX);
-            camera.position.z = distance * Math.cos(controls.rotationX) * Math.sin(controls.rotationY);
-            camera.lookAt(0, 0, 0);
-        }
-
-        function exportSTL() {
-            if (!surface) {
-                alert('Primero genera una superficie');
-                return;
-            }
-
-            const geometry = surface.geometry;
-            const vertices = geometry.attributes.position.array;
-            const indices = geometry.index.array;
-
-            let stlString = `solid ${currentEquation.replace(/[^a-zA-Z0-9]/g, '_')}\n`;
-
-            for (let i = 0; i < indices.length; i += 3) {
-                const a = indices[i] * 3;
-                const b = indices[i + 1] * 3;
-                const c = indices[i + 2] * 3;
-
-                const v1 = new THREE.Vector3(vertices[a], vertices[a + 1], vertices[a + 2]);
-                const v2 = new THREE.Vector3(vertices[b], vertices[b + 1], vertices[b + 2]);
-                const v3 = new THREE.Vector3(vertices[c], vertices[c + 1], vertices[c + 2]);
-
-                const cb = new THREE.Vector3();
-                const ab = new THREE.Vector3();
-                cb.subVectors(v3, v2);
-                ab.subVectors(v1, v2);
-                cb.cross(ab);
-                cb.normalize();
-
-                stlString += `  facet normal ${cb.x.toFixed(6)} ${cb.y.toFixed(6)} ${cb.z.toFixed(6)}\n`;
-                stlString += '    outer loop\n';
-                stlString += `      vertex ${v1.x.toFixed(6)} ${v1.y.toFixed(6)} ${v1.z.toFixed(6)}\n`;
-                stlString += `      vertex ${v2.x.toFixed(6)} ${v2.y.toFixed(6)} ${v2.z.toFixed(6)}\n`;
-                stlString += `      vertex ${v3.x.toFixed(6)} ${v3.y.toFixed(6)} ${v3.z.toFixed(6)}\n`;
-                stlString += '    endloop\n';
-                stlString += '  endfacet\n';
-            }
-
-            stlString += `endsolid ${currentEquation.replace(/[^a-zA-Z0-9]/g, '_')}`;
-
-            const blob = new Blob([stlString], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `ecuacion_3d_${currentEquation.replace(/[^a-zA-Z0-9]/g, '_')}.stl`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-
-            alert('¡Archivo STL exportado exitosamente!');
-        }
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            
-            if (!controls.isMouseDown) {
-                controls.rotationY += 0.005;
-                updateCameraPosition();
-            }
-            
-            renderer.render(scene, camera);
-        }
-
-        // Inicializar cuando se carga la página
-        init();
-
-        // Agregar funcionalidad de menús colapsables
+        // Inicializar controles
         document.addEventListener('DOMContentLoaded', function() {
-            const coll = document.getElementsByClassName("collapsible");
-            
-            for (let i = 0; i < coll.length; i++) {
-                coll[i].addEventListener("click", function() {
-                    this.classList.toggle("active");
-                    const panel = this.nextElementSibling;
-                    
-                    if (panel.style.maxHeight) {
-                        panel.style.maxHeight = null;
-                        panel.classList.remove("active");
-                        document.body.classList.remove("panel-open");
-                    } else {
-                        // Cerrar otros paneles
-                        const allPanels = document.getElementsByClassName("panel");
-                        for (let j = 0; j < allPanels.length; j++) {
-                            allPanels[j].style.maxHeight = null;
-                            allPanels[j].classList.remove("active");
-                        }
-                        
-                        panel.style.maxHeight = panel.scrollHeight + "px";
-                        panel.classList.add("active");
-                        document.body.classList.add("panel-open");
-                        
-                        // Scroll suave al panel abierto
-                        setTimeout(() => {
-                            this.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }, 100);
-                    }
-                });
-            }
-        });
+            // Inicializar Three.js
+            init();
 
-        // Agregar el manejo del menú burger
-        document.addEventListener('DOMContentLoaded', function() {
+            // Configurar controles
+            document.getElementById('resolution').addEventListener('input', function(e) {
+                document.getElementById('resolution-value').value = e.target.value;
+                generateSurface();
+            });
+
+            document.getElementById('scale').addEventListener('input', function(e) {
+                document.getElementById('scale-value').value = e.target.value;
+                generateSurface();
+            });
+
+            document.getElementById('rotation-speed').addEventListener('input', function(e) {
+                rotationSpeed = parseFloat(e.target.value);
+                document.getElementById('rotation-speed-value').value = e.target.value;
+            });
+
+            document.getElementById('toggle-rotation').addEventListener('click', function() {
+                isRotating = !isRotating;
+                this.textContent = isRotating ? 'Pausar Rotación' : 'Iniciar Rotación';
+            });
+
+            document.getElementById('reset-view').addEventListener('click', function() {
+                if (surface) {
+                    surface.rotation.set(0, 0, 0);
+                }
+            });
+
+            // Configurar menú burger
             const burgerMenu = document.querySelector('.burger-menu');
             const sideMenu = document.querySelector('.side-menu');
             const menuOverlay = document.querySelector('.menu-overlay');
@@ -1269,6 +882,9 @@
                     }
                 });
             });
+
+            // Generar superficie inicial
+            generateSurface();
         });
     </script>
 </body>
