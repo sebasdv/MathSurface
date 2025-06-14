@@ -666,48 +666,93 @@
         <div class="menu-section">
             <h3>Ecuación z = f(x, y)</h3>
             <div class="control-group">
-                <input type="text" id="equation" placeholder="Ingrese la ecuación" value="sin(x) * cos(y)">
+                <input type="text" id="equation" value="A * sin(f*x + phi) * cos(f*y)" placeholder="Ej: A * sin(f*x + phi)">
+                <div id="equation-status"></div>
+                <button onclick="generateSurface()">Generar Superficie</button>
+                <button onclick="resetView()">Centrar Vista</button>
+                
+                <div id="equation-info">
+                    <strong>Variables disponibles:</strong> x, y, A, f, phi, Border_Factor<br>
+                    <strong>Funciones:</strong> sin, cos, tan, log, exp, sqrt, abs, PI, E<br>
+                    <strong>Operadores:</strong> +, -, *, /, ^, ( )<br>
+                    <strong>Parámetros:</strong> Usa A, f, phi, Border_Factor para valores ajustables
+                </div>
             </div>
-            <div id="equation-info"></div>
         </div>
 
         <div class="menu-section">
             <h3>Ejemplos Populares</h3>
             <div class="examples">
-                <button class="example-btn" onclick="setExample('sin(x) * cos(y)')">Onda Seno</button>
-                <button class="example-btn" onclick="setExample('x^2 + y^2')">Paraboloide</button>
-                <button class="example-btn" onclick="setExample('sin(sqrt(x^2 + y^2))')">Onda Circular</button>
-                <button class="example-btn" onclick="setExample('x * y')">Silla de Montar</button>
-                <button class="example-btn" onclick="setExample('exp(-(x^2 + y^2)/10)')">Campana</button>
-                <button class="example-btn" onclick="setExample('sin(x) + cos(y)')">Onda Combinada</button>
+                <button class="example-btn" onclick="loadExample('(5*exp(-((x-2)^2+(y-2)^2)) - 1.5*exp(-(x^2+y^2)) + 0.5*(x - 1)^2 - 0.5*(y - 1)^2) * (1 - Border_Factor)')">Función G(x,y) Compleja</button>
+                <button class="example-btn" onclick="loadExample('A * (sin(f*x + phi) + sin(f*(-x/2 + y*sqrt(3)/2) + phi) + sin(f*(-x/2 - y*sqrt(3)/2) + phi)) / 3')">Ondas Triangulares</button>
+                <button class="example-btn" onclick="loadExample('A * sin(f*x + phi) * cos(f*y)')">Ondas Moduladas</button>
+                <button class="example-btn" onclick="loadExample('A * sin(f*sqrt(x^2 + y^2) + phi)')">Ondas Radiales</button>
+                <button class="example-btn" onclick="loadExample('A * exp(-(x^2 + y^2) / f)')">Campana Gaussiana</button>
+                <button class="example-btn" onclick="loadExample('(y^2 - x^2) / 4')">Paraboloide Hiperbólico</button>
+                <button class="example-btn" onclick="loadExample('A * cos(f*x + phi) * sin(f*y)')">Ondas Cruzadas</button>
+                <button class="example-btn" onclick="loadExample('A * sin(f*x*y + phi)')">Interferencia XY</button>
+                <button class="example-btn" onclick="loadExample('A * (sin(f*x) + cos(f*y) + phi)')">Ondas Sumadas</button>
+                <button class="example-btn" onclick="loadExample('A * exp(-f*sqrt(x^2 + y^2)) * sin(phi*sqrt(x^2 + y^2))')">Onda Amortiguada</button>
+                <button class="example-btn" onclick="loadExample('-0.25*x^3 - 0.25*y^3 + 0.5*x^2 + 0.5*y^2 - 0.25*x^2*y^2')">Función F(x,y)</button>
             </div>
         </div>
 
         <div class="menu-section">
             <h3>Parámetros Dinámicos</h3>
-            <div id="parameters"></div>
+            <div id="parameters">
+                <div class="param-item">
+                    <div class="param-label">Amplitud (A)</div>
+                    <div class="param-value" id="A-value">2.0</div>
+                    <input type="range" id="A" class="param-slider" min="0.1" max="5" step="0.1" value="2">
+                </div>
+
+                <div class="param-item">
+                    <div class="param-label">Frecuencia (f)</div>
+                    <div class="param-value" id="f-value">2.0</div>
+                    <input type="range" id="f" class="param-slider" min="0.1" max="10" step="0.1" value="2">
+                </div>
+                
+                <div class="param-item">
+                    <div class="param-label">Fase (phi)</div>
+                    <div class="param-value" id="phi-value">0.0</div>
+                    <input type="range" id="phi" class="param-slider" min="0" max="6.28" step="0.1" value="0">
+                </div>
+                
+                <div class="param-item">
+                    <div class="param-label">Border Factor</div>
+                    <div class="param-value" id="Border_Factor-value">0.1</div>
+                    <input type="range" id="Border_Factor" class="param-slider" min="0" max="1" step="0.01" value="0.1">
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <input type="checkbox" id="auto-update" checked>
+                    <label for="auto-update">Actualización automática</label>
+                </div>
+            </div>
         </div>
 
         <div class="menu-section">
             <h3>Controles de Visualización</h3>
             <div class="controls">
-                <div class="control-group">
-                    <label for="resolution">Resolución:</label>
-                    <input type="range" id="resolution" min="10" max="100" value="50">
-                    <input type="number" id="resolution-value" value="50" min="10" max="100">
+                <div class="control-item">
+                    <label>Resolución: <input type="range" id="resolution" min="20" max="100" value="80"></label>
                 </div>
-                <div class="control-group">
-                    <label for="scale">Escala:</label>
-                    <input type="range" id="scale" min="1" max="10" step="0.1" value="1">
-                    <input type="number" id="scale-value" value="1" min="1" max="10" step="0.1">
+                <div class="control-item">
+                    <label>Rango: <input type="range" id="range" min="1" max="10" value="5"></label>
                 </div>
-                <div class="control-group">
-                    <label for="rotation-speed">Velocidad de Rotación:</label>
-                    <input type="range" id="rotation-speed" min="0" max="0.05" step="0.001" value="0.01">
-                    <input type="number" id="rotation-speed-value" value="0.01" min="0" max="0.05" step="0.001">
+                <div class="control-item">
+                    <label>Espesor: <input type="range" id="thickness" min="0.1" max="2" step="0.1" value="0.2"></label>
                 </div>
-                <button id="toggle-rotation">Pausar Rotación</button>
-                <button id="reset-view">Reiniciar Vista</button>
+                <div class="control-item">
+                    <label>Altura Z: <input type="range" id="zScale" min="0.1" max="3" step="0.1" value="1.5"></label>
+                </div>
+                <div class="control-item">
+                    <label>Opacidad: <input type="range" id="opacity" min="0.1" max="1" step="0.1" value="0.8"></label>
+                </div>
+                <div class="control-item">
+                    <button id="exportSTL">Exportar STL</button>
+                    <button onclick="toggleWireframe()">Wireframe</button>
+                </div>
             </div>
         </div>
     </div>
@@ -821,10 +866,27 @@
             }
         }
 
-        // Cargar ejemplo
-        function setExample(equation) {
+        // Función para cargar ejemplo
+        function loadExample(equation) {
             document.getElementById('equation').value = equation;
-            generateSurface();
+            if (document.getElementById('auto-update').checked) {
+                generateSurface();
+            }
+        }
+
+        // Función para resetear la vista
+        function resetView() {
+            if (surface) {
+                surface.rotation.set(0, 0, 0);
+                camera.position.set(0, 0, 5);
+            }
+        }
+
+        // Función para toggle wireframe
+        function toggleWireframe() {
+            if (wireframe) {
+                wireframe.visible = !wireframe.visible;
+            }
         }
 
         // Inicializar controles
@@ -832,30 +894,41 @@
             // Inicializar Three.js
             init();
 
-            // Configurar controles
-            document.getElementById('resolution').addEventListener('input', function(e) {
-                document.getElementById('resolution-value').value = e.target.value;
-                generateSurface();
+            // Configurar parámetros dinámicos
+            const params = ['A', 'f', 'phi', 'Border_Factor'];
+            params.forEach(param => {
+                const slider = document.getElementById(param);
+                const value = document.getElementById(param + '-value');
+                
+                slider.addEventListener('input', function(e) {
+                    value.textContent = e.target.value;
+                    if (document.getElementById('auto-update').checked) {
+                        generateSurface();
+                    }
+                });
             });
 
-            document.getElementById('scale').addEventListener('input', function(e) {
-                document.getElementById('scale-value').value = e.target.value;
-                generateSurface();
+            // Configurar controles de visualización
+            const controls = ['resolution', 'range', 'thickness', 'zScale', 'opacity'];
+            controls.forEach(control => {
+                document.getElementById(control).addEventListener('input', function() {
+                    if (document.getElementById('auto-update').checked) {
+                        generateSurface();
+                    }
+                });
             });
 
-            document.getElementById('rotation-speed').addEventListener('input', function(e) {
-                rotationSpeed = parseFloat(e.target.value);
-                document.getElementById('rotation-speed-value').value = e.target.value;
-            });
-
-            document.getElementById('toggle-rotation').addEventListener('click', function() {
-                isRotating = !isRotating;
-                this.textContent = isRotating ? 'Pausar Rotación' : 'Iniciar Rotación';
-            });
-
-            document.getElementById('reset-view').addEventListener('click', function() {
+            // Configurar exportación STL
+            document.getElementById('exportSTL').addEventListener('click', function() {
                 if (surface) {
-                    surface.rotation.set(0, 0, 0);
+                    const exporter = new THREE.STLExporter();
+                    const stlString = exporter.parse(surface);
+                    const blob = new Blob([stlString], { type: 'application/octet-stream' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = 'surface.stl';
+                    link.click();
                 }
             });
 
