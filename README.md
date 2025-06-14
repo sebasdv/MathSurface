@@ -1,6 +1,7 @@
 # Generador 3D de Ecuaciones Matemáticas Avanzado / Advanced 3D Equation Generator
 
 **Autor / Author:** Sebastián Duarte Villanueva  
+**Coautor / Co-author:** Claude.ai  
 **Organización / Organization:** Universidad Adolfo Ibañez, Design Engineering Center
 
 ## Español
