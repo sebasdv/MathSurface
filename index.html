@@ -459,111 +459,235 @@
             margin-top: 10px;
             line-height: 1.4;
         }
+
+        /* Estilos para el menú burger */
+        .burger-menu {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: #2c3e50;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .burger-menu span {
+            display: block;
+            width: 25px;
+            height: 3px;
+            background: white;
+            margin: 2px 0;
+            transition: all 0.3s ease;
+        }
+
+        .burger-menu.active span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+
+        .burger-menu.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .burger-menu.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(5px, -5px);
+        }
+
+        .side-menu {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 85%;
+            max-width: 400px;
+            height: 100vh;
+            background: #1a1a1a;
+            z-index: 999;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.2);
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .side-menu.active {
+            right: 0;
+        }
+
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 998;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .menu-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+                margin-top: 70px;
+            }
+
+            .burger-menu {
+                top: 10px;
+                right: 10px;
+                width: 40px;
+                height: 40px;
+            }
+
+            .burger-menu span {
+                width: 20px;
+                height: 2px;
+            }
+
+            .side-menu {
+                width: 100%;
+                max-width: none;
+            }
+
+            .menu-section {
+                margin-bottom: 20px;
+                padding: 15px;
+                background: #2c3e50;
+                border-radius: 8px;
+            }
+
+            .menu-section h3 {
+                margin: 0 0 15px 0;
+                color: white;
+                font-size: 1.1em;
+            }
+
+            .control-group {
+                margin-bottom: 15px;
+            }
+
+            .control-group label {
+                display: block;
+                margin-bottom: 5px;
+                color: #fff;
+            }
+
+            .control-group input[type="range"] {
+                width: 100%;
+                margin: 5px 0;
+            }
+
+            .control-group input[type="number"] {
+                width: 60px;
+                padding: 5px;
+                background: #34495e;
+                border: 1px solid #2c3e50;
+                color: white;
+                border-radius: 4px;
+            }
+
+            .examples {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                gap: 8px;
+            }
+
+            .example-btn {
+                padding: 8px;
+                font-size: 0.9em;
+                background: #34495e;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: background 0.3s ease;
+            }
+
+            .example-btn:hover {
+                background: #2c3e50;
+            }
+        }
     </style>
 </head>
 <body>
-    <div id="container">
-        <div id="header">
-            <h1>DESIGN ENGINEERING CENTER</h1>
-            <h2>Generador 3D de Ecuaciones Matemáticas Avanzado</h2>
-        </div>
-        
-        <div id="equation-panel">
-            <button class="collapsible">Ecuación z = f(x, y)</button>
-            <div class="panel">
-                <input type="text" id="equation" value="A * sin(f*x + phi) * cos(f*y)" placeholder="Ej: A * sin(f*x + phi)">
-                <div id="equation-status"></div>
-                <button onclick="generateSurface()">Generar Superficie</button>
-                <button onclick="resetView()">Centrar Vista</button>
-                
-                <div id="equation-info">
-                    <strong>Variables disponibles:</strong> x, y, A, f, phi, Border_Factor<br>
-                    <strong>Funciones:</strong> sin, cos, tan, log, exp, sqrt, abs, PI, E<br>
-                    <strong>Operadores:</strong> +, -, *, /, ^, ( )<br>
-                    <strong>Parámetros:</strong> Usa A, f, phi, Border_Factor para valores ajustables
-                </div>
+    <button class="burger-menu">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <div class="menu-overlay"></div>
+
+    <div class="side-menu">
+        <div class="menu-section">
+            <h3>Ecuación z = f(x, y)</h3>
+            <div class="control-group">
+                <input type="text" id="equation" placeholder="Ingrese la ecuación" value="sin(x) * cos(y)">
             </div>
+            <div id="equation-info"></div>
         </div>
-        
-        <div id="examples">
-            <button class="collapsible">Ejemplos Populares</button>
-            <div class="panel">
-                <button class="example-btn" onclick="loadExample('(5*exp(-((x-2)^2+(y-2)^2)) - 1.5*exp(-(x^2+y^2)) + 0.5*(x - 1)^2 - 0.5*(y - 1)^2) * (1 - Border_Factor)')">Función G(x,y) Compleja</button>
-                <button class="example-btn" onclick="loadExample('A * (sin(f*x + phi) + sin(f*(-x/2 + y*sqrt(3)/2) + phi) + sin(f*(-x/2 - y*sqrt(3)/2) + phi)) / 3')">Ondas Triangulares</button>
-                <button class="example-btn" onclick="loadExample('A * sin(f*x + phi) * cos(f*y)')">Ondas Moduladas</button>
-                <button class="example-btn" onclick="loadExample('A * sin(f*sqrt(x^2 + y^2) + phi)')">Ondas Radiales</button>
-                <button class="example-btn" onclick="loadExample('A * exp(-(x^2 + y^2) / f)')">Campana Gaussiana</button>
-                <button class="example-btn" onclick="loadExample('(y^2 - x^2) / 4')">Paraboloide Hiperbólico</button>
-                <button class="example-btn" onclick="loadExample('A * cos(f*x + phi) * sin(f*y)')">Ondas Cruzadas</button>
-                <button class="example-btn" onclick="loadExample('A * sin(f*x*y + phi)')">Interferencia XY</button>
-                <button class="example-btn" onclick="loadExample('A * (sin(f*x) + cos(f*y) + phi)')">Ondas Sumadas</button>
-                <button class="example-btn" onclick="loadExample('A * exp(-f*sqrt(x^2 + y^2)) * sin(phi*sqrt(x^2 + y^2))')">Onda Amortiguada</button>
-                <button class="example-btn" onclick="loadExample('-0.25*x^3 - 0.25*y^3 + 0.5*x^2 + 0.5*y^2 - 0.25*x^2*y^2')">Función F(x,y)</button>
+
+        <div class="menu-section">
+            <h3>Ejemplos Populares</h3>
+            <div class="examples">
+                <button class="example-btn" onclick="setExample('sin(x) * cos(y)')">Onda Seno</button>
+                <button class="example-btn" onclick="setExample('x^2 + y^2')">Paraboloide</button>
+                <button class="example-btn" onclick="setExample('sin(sqrt(x^2 + y^2))')">Onda Circular</button>
+                <button class="example-btn" onclick="setExample('x * y')">Silla de Montar</button>
+                <button class="example-btn" onclick="setExample('exp(-(x^2 + y^2)/10)')">Campana</button>
+                <button class="example-btn" onclick="setExample('sin(x) + cos(y)')">Onda Combinada</button>
             </div>
         </div>
 
-        <div id="parameters">
-            <button class="collapsible">Parámetros Dinámicos</button>
-            <div class="panel">
-                <div class="param-item">
-                    <div class="param-label">Amplitud (A)</div>
-                    <div class="param-value" id="A-value">2.0</div>
-                    <input type="range" id="A" class="param-slider" min="0.1" max="5" step="0.1" value="2">
-                </div>
-                
-                <div class="param-item">
-                    <div class="param-label">Frecuencia (f)</div>
-                    <div class="param-value" id="f-value">2.0</div>
-                    <input type="range" id="f" class="param-slider" min="0.1" max="10" step="0.1" value="2">
-                </div>
-                
-                <div class="param-item">
-                    <div class="param-label">Fase (phi)</div>
-                    <div class="param-value" id="phi-value">0.0</div>
-                    <input type="range" id="phi" class="param-slider" min="0" max="6.28" step="0.1" value="0">
-                </div>
-                
-                <div class="param-item">
-                    <div class="param-label">Border Factor</div>
-                    <div class="param-value" id="Border_Factor-value">0.1</div>
-                    <input type="range" id="Border_Factor" class="param-slider" min="0" max="1" step="0.01" value="0.1">
-                </div>
-                
-                <div style="margin-top: 15px;">
-                    <input type="checkbox" id="auto-update" checked>
-                    <label for="auto-update" style="font-size: 11px; margin-left: 5px;">Actualización automática</label>
-                </div>
-            </div>
+        <div class="menu-section">
+            <h3>Parámetros Dinámicos</h3>
+            <div id="parameters"></div>
         </div>
 
-        <div id="controls">
-            <button class="collapsible">Controles de Visualización</button>
-            <div class="panel">
-                <div class="control-item">
-                    <label>Resolución: <input type="range" id="resolution" min="20" max="100" value="80"></label>
+        <div class="menu-section">
+            <h3>Controles de Visualización</h3>
+            <div class="controls">
+                <div class="control-group">
+                    <label for="resolution">Resolución:</label>
+                    <input type="range" id="resolution" min="10" max="100" value="50">
+                    <input type="number" id="resolution-value" value="50" min="10" max="100">
                 </div>
-                <div class="control-item">
-                    <label>Rango: <input type="range" id="range" min="1" max="10" value="5"></label>
+                <div class="control-group">
+                    <label for="scale">Escala:</label>
+                    <input type="range" id="scale" min="1" max="10" step="0.1" value="1">
+                    <input type="number" id="scale-value" value="1" min="1" max="10" step="0.1">
                 </div>
-                <div class="control-item">
-                    <label>Espesor: <input type="range" id="thickness" min="0.1" max="2" step="0.1" value="0.2"></label>
+                <div class="control-group">
+                    <label for="rotation-speed">Velocidad de Rotación:</label>
+                    <input type="range" id="rotation-speed" min="0" max="0.05" step="0.001" value="0.01">
+                    <input type="number" id="rotation-speed-value" value="0.01" min="0" max="0.05" step="0.001">
                 </div>
-                <div class="control-item">
-                    <label>Altura Z: <input type="range" id="zScale" min="0.1" max="3" step="0.1" value="1.5"></label>
-                </div>
-                <div class="control-item">
-                    <label>Opacidad: <input type="range" id="opacity" min="0.1" max="1" step="0.1" value="0.8"></label>
-                </div>
-                <div class="control-item">
-                    <button id="exportSTL">Exportar STL</button>
-                    <button onclick="toggleWireframe()">Wireframe</button>
-                </div>
+                <button id="toggle-rotation">Pausar Rotación</button>
+                <button id="reset-view">Reiniciar Vista</button>
             </div>
         </div>
     </div>
 
+    <div class="container">
+        <div id="graph-container"></div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjs@9.4.4/lib/browser/math.min.js"></script>
     <script>
         let scene, camera, renderer, surface, wireframe;
         let currentEquation = "A * sin(f*x + phi) * cos(f*y)";
@@ -1119,6 +1243,32 @@
                     }
                 });
             }
+        });
+
+        // Agregar el manejo del menú burger
+        document.addEventListener('DOMContentLoaded', function() {
+            const burgerMenu = document.querySelector('.burger-menu');
+            const sideMenu = document.querySelector('.side-menu');
+            const menuOverlay = document.querySelector('.menu-overlay');
+
+            function toggleMenu() {
+                burgerMenu.classList.toggle('active');
+                sideMenu.classList.toggle('active');
+                menuOverlay.classList.toggle('active');
+                document.body.style.overflow = sideMenu.classList.contains('active') ? 'hidden' : '';
+            }
+
+            burgerMenu.addEventListener('click', toggleMenu);
+            menuOverlay.addEventListener('click', toggleMenu);
+
+            // Cerrar menú al hacer click en un ejemplo
+            document.querySelectorAll('.example-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (window.innerWidth <= 768) {
+                        toggleMenu();
+                    }
+                });
+            });
         });
     </script>
 </body>
