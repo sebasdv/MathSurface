@@ -208,22 +208,25 @@
             #header {
                 top: 10px;
                 padding: 10px 20px;
+                width: 95%;
             }
             
             #equation-panel {
                 top: 80px;
                 left: 50%;
                 transform: translateX(-50%);
-                width: 90%;
+                width: 95%;
+                max-height: 25vh;
+                overflow-y: auto;
             }
             
             #examples {
                 top: auto;
-                bottom: 50%;
+                bottom: 60%;
                 right: 50%;
                 transform: translate(50%, 50%);
-                width: 90%;
-                max-height: 40vh;
+                width: 95%;
+                max-height: 25vh;
                 overflow-y: auto;
             }
             
@@ -231,19 +234,123 @@
                 bottom: 20px;
                 right: 50%;
                 transform: translateX(50%);
-                width: 90%;
+                width: 95%;
+                max-height: 25vh;
+                overflow-y: auto;
             }
             
             #controls {
                 bottom: 20px;
                 left: 50%;
                 transform: translateX(-50%);
-                width: 90%;
+                width: 95%;
+                max-height: 25vh;
+                overflow-y: auto;
             }
 
             .example-btn {
                 padding: 3px 6px;
                 margin: 1px;
+                font-size: 11px;
+            }
+
+            .param-item {
+                margin: 5px 0;
+            }
+
+            .param-label {
+                font-size: 12px;
+            }
+
+            .param-value {
+                font-size: 11px;
+            }
+
+            input[type="range"] {
+                margin: 2px 0;
+            }
+
+            button {
+                padding: 4px 8px;
+                font-size: 11px;
+                margin: 2px;
+            }
+
+            #equation-info {
+                font-size: 11px;
+                margin-top: 5px;
+            }
+
+            /* Ajustes para mejorar la visibilidad */
+            .param-slider {
+                height: 20px;
+            }
+
+            input[type="text"] {
+                padding: 6px;
+                font-size: 12px;
+            }
+
+            /* Ajuste de espaciado general */
+            .control-item {
+                margin: 4px 0;
+            }
+
+            /* Mejora de la legibilidad */
+            #equation-panel, #examples, #parameters, #controls {
+                padding: 10px;
+                font-size: 12px;
+            }
+
+            /* Ajuste de la altura máxima para evitar superposición */
+            #equation-panel {
+                max-height: 20vh;
+            }
+
+            #examples {
+                max-height: 20vh;
+            }
+
+            #parameters {
+                max-height: 20vh;
+            }
+
+            #controls {
+                max-height: 20vh;
+            }
+        }
+
+        /* Ajustes adicionales para pantallas muy pequeñas */
+        @media (max-width: 480px) {
+            #header h1 {
+                font-size: 16px;
+            }
+
+            #header h2 {
+                font-size: 12px;
+            }
+
+            .param-label {
+                font-size: 11px;
+            }
+
+            .param-value {
+                font-size: 10px;
+            }
+
+            button {
+                padding: 3px 6px;
+                font-size: 10px;
+            }
+
+            /* Reducir aún más el padding en paneles */
+            #equation-panel, #examples, #parameters, #controls {
+                padding: 8px;
+            }
+
+            /* Ajustar alturas máximas */
+            #equation-panel, #examples, #parameters, #controls {
+                max-height: 18vh;
             }
         }
 
