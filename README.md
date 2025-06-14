@@ -1,4 +1,4 @@
-# Generador 3D de Ecuaciones Matemáticas Avanzado / Advanced 3D Equation Generator
+# Generador 3D de Ecuaciones Matemáticas / 3D Mathematical Equation Generator
 
 **Autor / Author:** Sebastián Duarte Villanueva  
 **Coautor / Co-author:** Claude.ai  
@@ -6,7 +6,7 @@
 
 ## Español
 
-Este proyecto permite visualizar superficies 3D de funciones matemáticas de dos variables (x, y) de manera interactiva usando Three.js y Math.js. Puedes ingresar tu propia ecuación en el campo correspondiente y ajustar parámetros como amplitud, frecuencia, fase, rango, resolución y más.
+Este proyecto permite visualizar y generar modelos 3D de funciones matemáticas de dos variables (x, y) de manera interactiva usando Three.js y Math.js. Puedes ingresar tu propia ecuación en el campo correspondiente y ajustar parámetros como amplitud, frecuencia, fase, rango, resolución y más.
 
 ### ¿Cómo usar?
 1. Abre el archivo `index.html` en tu navegador.
@@ -30,7 +30,7 @@ Ingresa:
 
 ## English
 
-This project allows you to visualize 3D surfaces of mathematical functions of two variables (x, y) interactively using Three.js and Math.js. You can enter your own equation and adjust parameters such as amplitude, frequency, phase, range, resolution, and more.
+This project allows you to visualize and generate 3D models of mathematical functions of two variables (x, y) interactively using Three.js and Math.js. You can enter your own equation and adjust parameters such as amplitude, frequency, phase, range, resolution, and more.
 
 ### How to use?
 1. Open the `index.html` file in your browser.
