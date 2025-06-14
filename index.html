@@ -33,11 +33,13 @@
             text-align: center;
             box-shadow: 0 8px 25px rgba(0,0,0,0.3);
             border: 2px solid #00bcd4;
+            width: 90%;
+            max-width: 600px;
         }
         
         #header h1 {
             margin: 0;
-            font-size: 18px;
+            font-size: clamp(16px, 4vw, 24px);
             font-weight: bold;
             color: #00bcd4;
             letter-spacing: 1px;
@@ -45,7 +47,7 @@
         
         #header h2 {
             margin: 5px 0 0 0;
-            font-size: 14px;
+            font-size: clamp(12px, 3vw, 18px);
             font-weight: normal;
             color: white;
             opacity: 0.9;
@@ -61,7 +63,7 @@
             padding: 20px;
             border-radius: 15px;
             backdrop-filter: blur(10px);
-            min-width: 300px;
+            width: 90%;
             max-width: 400px;
             border: 2px solid #00bcd4;
         }
@@ -77,30 +79,23 @@
             border-radius: 10px;
             backdrop-filter: blur(10px);
             border: 2px solid #00bcd4;
-            min-width: 200px;
+            width: 90%;
+            max-width: 300px;
         }
         
-        .param-item {
-            margin: 10px 0;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .param-label {
-            font-size: 12px;
-            margin-bottom: 5px;
-            color: #00bcd4;
-            font-weight: bold;
-        }
-        
-        .param-value {
-            font-size: 11px;
-            color: #ccc;
-            margin-bottom: 3px;
-        }
-        
-        .param-slider {
-            width: 100%;
+        #examples {
+            position: absolute;
+            top: 100px;
+            right: 20px;
+            color: white;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            width: 90%;
+            max-width: 300px;
+            border: 2px solid #00bcd4;
         }
         
         #controls {
@@ -114,21 +109,31 @@
             border-radius: 10px;
             backdrop-filter: blur(10px);
             border: 2px solid #00bcd4;
-            max-width: 200px;
+            width: 90%;
+            max-width: 300px;
+        }
+
+        .param-item {
+            margin: 10px 0;
+            display: flex;
+            flex-direction: column;
         }
         
-        #examples {
-            position: absolute;
-            top: 100px;
-            right: 20px;
-            color: white;
-            z-index: 100;
-            background: rgba(0, 0, 0, 0.9);
-            padding: 15px;
-            border-radius: 10px;
-            backdrop-filter: blur(10px);
-            max-width: 250px;
-            border: 2px solid #00bcd4;
+        .param-label {
+            font-size: clamp(12px, 2vw, 14px);
+            margin-bottom: 5px;
+            color: #00bcd4;
+            font-weight: bold;
+        }
+        
+        .param-value {
+            font-size: clamp(11px, 1.5vw, 13px);
+            color: #ccc;
+            margin-bottom: 3px;
+        }
+        
+        .param-slider {
+            width: 100%;
         }
         
         .control-item {
@@ -136,8 +141,8 @@
         }
         
         input[type="range"] {
-            width: 150px;
-            margin-left: 10px;
+            width: 100%;
+            margin: 5px 0;
         }
         
         input[type="text"] {
@@ -147,19 +152,20 @@
             border-radius: 5px;
             background: rgba(255, 255, 255, 0.9);
             font-family: 'Courier New', monospace;
-            font-size: 14px;
+            font-size: clamp(12px, 2vw, 14px);
         }
         
         button {
             background: #00bcd4;
             border: none;
-            padding: 8px 15px;
+            padding: clamp(6px, 1.5vw, 8px) clamp(12px, 2vw, 15px);
             border-radius: 5px;
             color: white;
             cursor: pointer;
             font-weight: bold;
             margin: 5px 5px 5px 0;
             transition: background 0.3s;
+            font-size: clamp(11px, 1.5vw, 13px);
         }
         
         button:hover {
@@ -168,7 +174,7 @@
         
         .example-btn {
             background: #00bcd4;
-            font-size: 11px;
+            font-size: clamp(10px, 1.5vw, 12px);
             padding: 4px 8px;
             margin: 2px;
             color: white;
@@ -180,21 +186,84 @@
         
         .error {
             color: #ff6b6b;
-            font-size: 12px;
+            font-size: clamp(11px, 1.5vw, 13px);
             margin-top: 5px;
         }
         
         .success {
             color: #00ff88;
-            font-size: 12px;
+            font-size: clamp(11px, 1.5vw, 13px);
             margin-top: 5px;
         }
         
         #equation-info {
-            font-size: 12px;
+            font-size: clamp(11px, 1.5vw, 13px);
             color: #ccc;
             margin-top: 10px;
             line-height: 1.4;
+        }
+
+        /* Media queries para dispositivos móviles */
+        @media (max-width: 768px) {
+            #header {
+                top: 10px;
+                padding: 10px 20px;
+            }
+            
+            #equation-panel {
+                top: 80px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 90%;
+            }
+            
+            #examples {
+                top: auto;
+                bottom: 50%;
+                right: 50%;
+                transform: translate(50%, 50%);
+                width: 90%;
+                max-height: 40vh;
+                overflow-y: auto;
+            }
+            
+            #parameters {
+                bottom: 20px;
+                right: 50%;
+                transform: translateX(50%);
+                width: 90%;
+            }
+            
+            #controls {
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 90%;
+            }
+
+            .example-btn {
+                padding: 3px 6px;
+                margin: 1px;
+            }
+        }
+
+        /* Media queries para tablets */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            #header {
+                width: 80%;
+            }
+            
+            #equation-panel {
+                width: 40%;
+            }
+            
+            #examples {
+                width: 40%;
+            }
+            
+            #parameters, #controls {
+                width: 40%;
+            }
         }
     </style>
 </head>
@@ -233,6 +302,7 @@
             <button class="example-btn" onclick="loadExample('A * sin(f*x*y + phi)')">Interferencia XY</button>
             <button class="example-btn" onclick="loadExample('A * (sin(f*x) + cos(f*y) + phi)')">Ondas Sumadas</button>
             <button class="example-btn" onclick="loadExample('A * exp(-f*sqrt(x^2 + y^2)) * sin(phi*sqrt(x^2 + y^2))')">Onda Amortiguada</button>
+            <button class="example-btn" onclick="loadExample('-0.25*x^3 - 0.25*y^3 + 0.5*x^2 + 0.5*y^2 - 0.25*x^2*y^2')">Función F(x,y)</button>
         </div>
 
         <div id="parameters">
@@ -270,16 +340,16 @@
 
         <div id="controls">
             <div class="control-item">
-                <label>Resolución: <input type="range" id="resolution" min="20" max="100" value="50"></label>
+                <label>Resolución: <input type="range" id="resolution" min="20" max="100" value="80"></label>
             </div>
             <div class="control-item">
-                <label>Rango: <input type="range" id="range" min="1" max="10" value="4"></label>
+                <label>Rango: <input type="range" id="range" min="1" max="10" value="5"></label>
             </div>
             <div class="control-item">
-                <label>Espesor: <input type="range" id="thickness" min="0.1" max="2" step="0.1" value="0.3"></label>
+                <label>Espesor: <input type="range" id="thickness" min="0.1" max="2" step="0.1" value="0.2"></label>
             </div>
             <div class="control-item">
-                <label>Altura Z: <input type="range" id="zScale" min="0.1" max="3" step="0.1" value="1"></label>
+                <label>Altura Z: <input type="range" id="zScale" min="0.1" max="3" step="0.1" value="1.5"></label>
             </div>
             <div class="control-item">
                 <label>Opacidad: <input type="range" id="opacity" min="0.1" max="1" step="0.1" value="0.8"></label>
