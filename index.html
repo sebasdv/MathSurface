@@ -372,6 +372,94 @@
                 width: 40%;
             }
         }
+
+        /* Estilos para menús colapsables */
+        .collapsible {
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            cursor: pointer;
+            padding: 10px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 2px solid #00bcd4;
+        }
+
+        .collapsible:after {
+            content: '\002B';
+            color: #00bcd4;
+            font-weight: bold;
+            float: right;
+            margin-left: 5px;
+            transition: transform 0.3s;
+        }
+
+        .active:after {
+            content: "\2212";
+            transform: rotate(180deg);
+        }
+
+        .panel {
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 0 0 8px 8px;
+            margin-top: -5px;
+        }
+
+        .panel.active {
+            max-height: 500px;
+            padding: 15px;
+            border: 2px solid #00bcd4;
+            border-top: none;
+        }
+
+        /* Ajustes para móviles */
+        @media (max-width: 768px) {
+            #equation-panel, #examples, #parameters, #controls {
+                position: fixed;
+                width: 95%;
+                max-height: none;
+                overflow: visible;
+            }
+
+            #equation-panel {
+                top: 80px;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+
+            #examples {
+                top: 140px;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+
+            #parameters {
+                top: 200px;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+
+            #controls {
+                top: 260px;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+
+            .panel.active {
+                max-height: 300px;
+                overflow-y: auto;
+            }
+        }
     </style>
 </head>
 <body>
@@ -382,88 +470,95 @@
         </div>
         
         <div id="equation-panel">
-            <h3 style="margin: 0 0 15px 0; color: #00bcd4;">Generador 3D de Ecuaciones</h3>
-            <label style="font-size: 14px; font-weight: bold;">Ecuación z = f(x, y):</label>
-            <input type="text" id="equation" value="A * sin(f*x + phi) * cos(f*y)" placeholder="Ej: A * sin(f*x + phi)">
-            <div id="equation-status"></div>
-            <button onclick="generateSurface()">Generar Superficie</button>
-            <button onclick="resetView()">Centrar Vista</button>
-            
-            <div id="equation-info">
-                <strong>Variables disponibles:</strong> x, y, A, f, phi, Border_Factor<br>
-                <strong>Funciones:</strong> sin, cos, tan, log, exp, sqrt, abs, PI, E<br>
-                <strong>Operadores:</strong> +, -, *, /, ^, ( )<br>
-                <strong>Parámetros:</strong> Usa A, f, phi, Border_Factor para valores ajustables
+            <button class="collapsible">Ecuación z = f(x, y)</button>
+            <div class="panel">
+                <input type="text" id="equation" value="A * sin(f*x + phi) * cos(f*y)" placeholder="Ej: A * sin(f*x + phi)">
+                <div id="equation-status"></div>
+                <button onclick="generateSurface()">Generar Superficie</button>
+                <button onclick="resetView()">Centrar Vista</button>
+                
+                <div id="equation-info">
+                    <strong>Variables disponibles:</strong> x, y, A, f, phi, Border_Factor<br>
+                    <strong>Funciones:</strong> sin, cos, tan, log, exp, sqrt, abs, PI, E<br>
+                    <strong>Operadores:</strong> +, -, *, /, ^, ( )<br>
+                    <strong>Parámetros:</strong> Usa A, f, phi, Border_Factor para valores ajustables
+                </div>
             </div>
         </div>
         
         <div id="examples">
-            <h4 style="margin: 0 0 10px 0; color: #00bcd4;">Ejemplos Populares</h4>
-            <button class="example-btn" onclick="loadExample('(5*exp(-((x-2)^2+(y-2)^2)) - 1.5*exp(-(x^2+y^2)) + 0.5*(x - 1)^2 - 0.5*(y - 1)^2) * (1 - Border_Factor)')">Función G(x,y) Compleja</button>
-            <button class="example-btn" onclick="loadExample('A * (sin(f*x + phi) + sin(f*(-x/2 + y*sqrt(3)/2) + phi) + sin(f*(-x/2 - y*sqrt(3)/2) + phi)) / 3')">Ondas Triangulares</button>
-            <button class="example-btn" onclick="loadExample('A * sin(f*x + phi) * cos(f*y)')">Ondas Moduladas</button>
-            <button class="example-btn" onclick="loadExample('A * sin(f*sqrt(x^2 + y^2) + phi)')">Ondas Radiales</button>
-            <button class="example-btn" onclick="loadExample('A * exp(-(x^2 + y^2) / f)')">Campana Gaussiana</button>
-            <button class="example-btn" onclick="loadExample('(y^2 - x^2) / 4')">Paraboloide Hiperbólico</button>
-            <button class="example-btn" onclick="loadExample('A * cos(f*x + phi) * sin(f*y)')">Ondas Cruzadas</button>
-            <button class="example-btn" onclick="loadExample('A * sin(f*x*y + phi)')">Interferencia XY</button>
-            <button class="example-btn" onclick="loadExample('A * (sin(f*x) + cos(f*y) + phi)')">Ondas Sumadas</button>
-            <button class="example-btn" onclick="loadExample('A * exp(-f*sqrt(x^2 + y^2)) * sin(phi*sqrt(x^2 + y^2))')">Onda Amortiguada</button>
-            <button class="example-btn" onclick="loadExample('-0.25*x^3 - 0.25*y^3 + 0.5*x^2 + 0.5*y^2 - 0.25*x^2*y^2')">Función F(x,y)</button>
+            <button class="collapsible">Ejemplos Populares</button>
+            <div class="panel">
+                <button class="example-btn" onclick="loadExample('(5*exp(-((x-2)^2+(y-2)^2)) - 1.5*exp(-(x^2+y^2)) + 0.5*(x - 1)^2 - 0.5*(y - 1)^2) * (1 - Border_Factor)')">Función G(x,y) Compleja</button>
+                <button class="example-btn" onclick="loadExample('A * (sin(f*x + phi) + sin(f*(-x/2 + y*sqrt(3)/2) + phi) + sin(f*(-x/2 - y*sqrt(3)/2) + phi)) / 3')">Ondas Triangulares</button>
+                <button class="example-btn" onclick="loadExample('A * sin(f*x + phi) * cos(f*y)')">Ondas Moduladas</button>
+                <button class="example-btn" onclick="loadExample('A * sin(f*sqrt(x^2 + y^2) + phi)')">Ondas Radiales</button>
+                <button class="example-btn" onclick="loadExample('A * exp(-(x^2 + y^2) / f)')">Campana Gaussiana</button>
+                <button class="example-btn" onclick="loadExample('(y^2 - x^2) / 4')">Paraboloide Hiperbólico</button>
+                <button class="example-btn" onclick="loadExample('A * cos(f*x + phi) * sin(f*y)')">Ondas Cruzadas</button>
+                <button class="example-btn" onclick="loadExample('A * sin(f*x*y + phi)')">Interferencia XY</button>
+                <button class="example-btn" onclick="loadExample('A * (sin(f*x) + cos(f*y) + phi)')">Ondas Sumadas</button>
+                <button class="example-btn" onclick="loadExample('A * exp(-f*sqrt(x^2 + y^2)) * sin(phi*sqrt(x^2 + y^2))')">Onda Amortiguada</button>
+                <button class="example-btn" onclick="loadExample('-0.25*x^3 - 0.25*y^3 + 0.5*x^2 + 0.5*y^2 - 0.25*x^2*y^2')">Función F(x,y)</button>
+            </div>
         </div>
 
         <div id="parameters">
-            <h4 style="margin: 0 0 15px 0; color: #00bcd4;">Parámetros Dinámicos</h4>
-            
-            <div class="param-item">
-                <div class="param-label">Amplitud (A)</div>
-                <div class="param-value" id="A-value">2.0</div>
-                <input type="range" id="A" class="param-slider" min="0.1" max="5" step="0.1" value="2">
-            </div>
-            
-            <div class="param-item">
-                <div class="param-label">Frecuencia (f)</div>
-                <div class="param-value" id="f-value">2.0</div>
-                <input type="range" id="f" class="param-slider" min="0.1" max="10" step="0.1" value="2">
-            </div>
-            
-            <div class="param-item">
-                <div class="param-label">Fase (phi)</div>
-                <div class="param-value" id="phi-value">0.0</div>
-                <input type="range" id="phi" class="param-slider" min="0" max="6.28" step="0.1" value="0">
-            </div>
-            
-            <div class="param-item">
-                <div class="param-label">Border Factor</div>
-                <div class="param-value" id="Border_Factor-value">0.1</div>
-                <input type="range" id="Border_Factor" class="param-slider" min="0" max="1" step="0.01" value="0.1">
-            </div>
-            
-            <div style="margin-top: 15px;">
-                <input type="checkbox" id="auto-update" checked>
-                <label for="auto-update" style="font-size: 11px; margin-left: 5px;">Actualización automática</label>
+            <button class="collapsible">Parámetros Dinámicos</button>
+            <div class="panel">
+                <div class="param-item">
+                    <div class="param-label">Amplitud (A)</div>
+                    <div class="param-value" id="A-value">2.0</div>
+                    <input type="range" id="A" class="param-slider" min="0.1" max="5" step="0.1" value="2">
+                </div>
+                
+                <div class="param-item">
+                    <div class="param-label">Frecuencia (f)</div>
+                    <div class="param-value" id="f-value">2.0</div>
+                    <input type="range" id="f" class="param-slider" min="0.1" max="10" step="0.1" value="2">
+                </div>
+                
+                <div class="param-item">
+                    <div class="param-label">Fase (phi)</div>
+                    <div class="param-value" id="phi-value">0.0</div>
+                    <input type="range" id="phi" class="param-slider" min="0" max="6.28" step="0.1" value="0">
+                </div>
+                
+                <div class="param-item">
+                    <div class="param-label">Border Factor</div>
+                    <div class="param-value" id="Border_Factor-value">0.1</div>
+                    <input type="range" id="Border_Factor" class="param-slider" min="0" max="1" step="0.01" value="0.1">
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <input type="checkbox" id="auto-update" checked>
+                    <label for="auto-update" style="font-size: 11px; margin-left: 5px;">Actualización automática</label>
+                </div>
             </div>
         </div>
 
         <div id="controls">
-            <div class="control-item">
-                <label>Resolución: <input type="range" id="resolution" min="20" max="100" value="80"></label>
-            </div>
-            <div class="control-item">
-                <label>Rango: <input type="range" id="range" min="1" max="10" value="5"></label>
-            </div>
-            <div class="control-item">
-                <label>Espesor: <input type="range" id="thickness" min="0.1" max="2" step="0.1" value="0.2"></label>
-            </div>
-            <div class="control-item">
-                <label>Altura Z: <input type="range" id="zScale" min="0.1" max="3" step="0.1" value="1.5"></label>
-            </div>
-            <div class="control-item">
-                <label>Opacidad: <input type="range" id="opacity" min="0.1" max="1" step="0.1" value="0.8"></label>
-            </div>
-            <div class="control-item">
-                <button id="exportSTL">Exportar STL</button>
-                <button onclick="toggleWireframe()">Wireframe</button>
+            <button class="collapsible">Controles de Visualización</button>
+            <div class="panel">
+                <div class="control-item">
+                    <label>Resolución: <input type="range" id="resolution" min="20" max="100" value="80"></label>
+                </div>
+                <div class="control-item">
+                    <label>Rango: <input type="range" id="range" min="1" max="10" value="5"></label>
+                </div>
+                <div class="control-item">
+                    <label>Espesor: <input type="range" id="thickness" min="0.1" max="2" step="0.1" value="0.2"></label>
+                </div>
+                <div class="control-item">
+                    <label>Altura Z: <input type="range" id="zScale" min="0.1" max="3" step="0.1" value="1.5"></label>
+                </div>
+                <div class="control-item">
+                    <label>Opacidad: <input type="range" id="opacity" min="0.1" max="1" step="0.1" value="0.8"></label>
+                </div>
+                <div class="control-item">
+                    <button id="exportSTL">Exportar STL</button>
+                    <button onclick="toggleWireframe()">Wireframe</button>
+                </div>
             </div>
         </div>
     </div>
@@ -992,6 +1087,28 @@
 
         // Inicializar cuando se carga la página
         init();
+
+        // Agregar funcionalidad de menús colapsables
+        document.addEventListener('DOMContentLoaded', function() {
+            const coll = document.getElementsByClassName("collapsible");
+            
+            for (let i = 0; i < coll.length; i++) {
+                coll[i].addEventListener("click", function() {
+                    this.classList.toggle("active");
+                    const panel = this.nextElementSibling;
+                    if (panel.style.maxHeight) {
+                        panel.style.maxHeight = null;
+                        panel.classList.remove("active");
+                    } else {
+                        panel.style.maxHeight = panel.scrollHeight + "px";
+                        panel.classList.add("active");
+                    }
+                });
+            }
+
+            // Abrir el panel de ecuación por defecto
+            coll[0].click();
+        });
     </script>
 </body>
 </html> 
