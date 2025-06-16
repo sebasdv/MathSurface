@@ -33,13 +33,11 @@
             text-align: center;
             box-shadow: 0 8px 25px rgba(0,0,0,0.3);
             border: 2px solid #00bcd4;
-            width: 90%;
-            max-width: 600px;
         }
         
         #header h1 {
             margin: 0;
-            font-size: clamp(16px, 4vw, 24px);
+            font-size: 18px;
             font-weight: bold;
             color: #00bcd4;
             letter-spacing: 1px;
@@ -47,7 +45,7 @@
         
         #header h2 {
             margin: 5px 0 0 0;
-            font-size: clamp(12px, 3vw, 18px);
+            font-size: 14px;
             font-weight: normal;
             color: white;
             opacity: 0.9;
@@ -63,46 +61,9 @@
             padding: 20px;
             border-radius: 15px;
             backdrop-filter: blur(10px);
-            width: 90%;
+            min-width: 300px;
             max-width: 400px;
             border: 2px solid #00bcd4;
-        }
-        
-        #parameters {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            color: white;
-            z-index: 100;
-            background: rgba(0, 0, 0, 0.9);
-            padding: 15px;
-            border-radius: 10px;
-            backdrop-filter: blur(10px);
-            border: 2px solid #00bcd4;
-            min-width: 200px;
-        }
-        
-        .param-item {
-            margin: 10px 0;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .param-label {
-            font-size: 12px;
-            margin-bottom: 5px;
-            color: #00bcd4;
-            font-weight: bold;
-        }
-        
-        .param-value {
-            font-size: 11px;
-            color: #ccc;
-            margin-bottom: 3px;
-        }
-        
-        .param-slider {
-            width: 100%;
         }
         
         #controls {
@@ -133,6 +94,22 @@
             border: 2px solid #00bcd4;
         }
         
+        #parameters {
+            position: absolute;
+            top: 200px;
+            right: 20px;
+            color: white;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 2px solid #00bcd4;
+            max-width: 220px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        
         .control-item {
             margin: 8px 0;
         }
@@ -161,8 +138,8 @@
         }
         
         input[type="range"] {
-            width: 100%;
-            margin: 5px 0;
+            width: 150px;
+            margin-left: 10px;
         }
         
         input[type="text"] {
@@ -172,20 +149,19 @@
             border-radius: 5px;
             background: rgba(255, 255, 255, 0.9);
             font-family: 'Courier New', monospace;
-            font-size: clamp(12px, 2vw, 14px);
+            font-size: 14px;
         }
         
         button {
             background: #00bcd4;
             border: none;
-            padding: clamp(6px, 1.5vw, 8px) clamp(12px, 2vw, 15px);
+            padding: 8px 15px;
             border-radius: 5px;
             color: white;
             cursor: pointer;
             font-weight: bold;
             margin: 5px 5px 5px 0;
             transition: background 0.3s;
-            font-size: clamp(11px, 1.5vw, 13px);
         }
         
         button:hover {
@@ -194,7 +170,7 @@
         
         .example-btn {
             background: #00bcd4;
-            font-size: clamp(10px, 1.5vw, 12px);
+            font-size: 11px;
             padding: 4px 8px;
             margin: 2px;
             color: white;
@@ -206,249 +182,21 @@
         
         .error {
             color: #ff6b6b;
-            font-size: clamp(11px, 1.5vw, 13px);
+            font-size: 12px;
             margin-top: 5px;
         }
         
         .success {
             color: #00ff88;
-            font-size: clamp(11px, 1.5vw, 13px);
+            font-size: 12px;
             margin-top: 5px;
         }
         
         #equation-info {
-            font-size: clamp(11px, 1.5vw, 13px);
+            font-size: 12px;
             color: #ccc;
             margin-top: 10px;
             line-height: 1.4;
-        }
-
-        /* Media queries para dispositivos móviles */
-        @media (max-width: 768px) {
-            #header {
-                top: 10px;
-                padding: 10px 20px;
-                width: 95%;
-            }
-            
-            #equation-panel {
-                top: 80px;
-                left: 50%;
-                transform: translateX(-50%);
-                width: 95%;
-                max-height: 25vh;
-                overflow-y: auto;
-            }
-            
-            #examples {
-                top: auto;
-                bottom: 60%;
-                right: 50%;
-                transform: translate(50%, 50%);
-                width: 95%;
-                max-height: 25vh;
-                overflow-y: auto;
-            }
-            
-            #parameters {
-                bottom: 20px;
-                right: 50%;
-                transform: translateX(50%);
-                width: 95%;
-                max-height: 25vh;
-                overflow-y: auto;
-            }
-            
-            #controls {
-                bottom: 20px;
-                left: 50%;
-                transform: translateX(-50%);
-                width: 95%;
-                max-height: 25vh;
-                overflow-y: auto;
-            }
-
-            .example-btn {
-                padding: 3px 6px;
-                margin: 1px;
-                font-size: 11px;
-            }
-
-            .param-item {
-                margin: 5px 0;
-            }
-
-            .param-label {
-                font-size: 12px;
-            }
-
-            .param-value {
-                font-size: 11px;
-            }
-
-            input[type="range"] {
-                margin: 2px 0;
-            }
-
-            button {
-                padding: 4px 8px;
-                font-size: 11px;
-                margin: 2px;
-            }
-
-            #equation-info {
-                font-size: 11px;
-                margin-top: 5px;
-            }
-
-            /* Ajustes para mejorar la visibilidad */
-            .param-slider {
-                height: 20px;
-            }
-
-            input[type="text"] {
-                padding: 6px;
-                font-size: 12px;
-            }
-
-            /* Ajuste de espaciado general */
-            .control-item {
-                margin: 4px 0;
-            }
-
-            /* Mejora de la legibilidad */
-            #equation-panel, #examples, #parameters, #controls {
-                padding: 10px;
-                font-size: 12px;
-            }
-
-            /* Ajuste de la altura máxima para evitar superposición */
-            #equation-panel {
-                max-height: 20vh;
-            }
-
-            #examples {
-                max-height: 20vh;
-            }
-
-            #parameters {
-                max-height: 20vh;
-            }
-
-            #controls {
-                max-height: 20vh;
-            }
-        }
-
-        /* Ajustes adicionales para pantallas muy pequeñas */
-        @media (max-width: 480px) {
-            #header h1 {
-                font-size: 16px;
-            }
-
-            #header h2 {
-                font-size: 12px;
-            }
-
-            .param-label {
-                font-size: 11px;
-            }
-
-            .param-value {
-                font-size: 10px;
-            }
-
-            button {
-                padding: 3px 6px;
-                font-size: 10px;
-            }
-
-            /* Reducir aún más el padding en paneles */
-            #equation-panel, #examples, #parameters, #controls {
-                padding: 8px;
-            }
-
-            /* Ajustar alturas máximas */
-            #equation-panel, #examples, #parameters, #controls {
-                max-height: 18vh;
-            }
-        }
-
-        /* Media queries para tablets */
-        @media (min-width: 769px) and (max-width: 1024px) {
-            #header {
-                width: 80%;
-            }
-            
-            #equation-panel {
-                width: 40%;
-            }
-            
-            #examples {
-                width: 40%;
-            }
-            
-            #parameters, #controls {
-                width: 40%;
-            }
-        }
-
-        /* Estilos para menús colapsables */
-        .collapsible {
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            cursor: pointer;
-            padding: 10px;
-            width: 100%;
-            border: none;
-            text-align: left;
-            outline: none;
-            border-radius: 8px;
-            margin-bottom: 5px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 2px solid #00bcd4;
-        }
-
-        .collapsible:after {
-            content: '\002B';
-            color: #00bcd4;
-            font-weight: bold;
-            float: right;
-            margin-left: 5px;
-            transition: transform 0.3s ease;
-        }
-
-        .active:after {
-            content: "\2212";
-            transform: rotate(180deg);
-        }
-
-        .content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out;
-            background: rgba(0, 0, 0, 0.9);
-            border-radius: 0 0 8px 8px;
-            margin-top: -5px;
-        }
-
-        .content.show {
-            max-height: 500px;
-            transition: max-height 0.5s ease-in;
-        }
-
-        /* Ajustes para móviles */
-        @media (max-width: 768px) {
-            .collapsible {
-                padding: 8px;
-                font-size: 14px;
-            }
-
-            .content {
-                margin-top: -2px;
-            }
         }
     </style>
 </head>
@@ -462,35 +210,33 @@
         <div id="equation-panel">
             <h3 style="margin: 0 0 15px 0; color: #00bcd4;">Generador 3D de Ecuaciones</h3>
             <label style="font-size: 14px; font-weight: bold;">Ecuación z = f(x, y):</label>
-            <input type="text" id="equation" value="A * sin(f*x + phi) * cos(f*y)" placeholder="Ej: A * sin(f*x + phi)">
+            <input type="text" id="equation" value="a1*x^3 + a2*y^3 + a3*x^2 + a4*y^2 + a5*x^2*y^2" placeholder="Ej: A * sin(f*x + phi)">
             <div id="equation-status"></div>
             <button onclick="generateSurface()">Generar Superficie</button>
             <button onclick="resetView()">Centrar Vista</button>
             
             <div id="equation-info">
-                <strong>Variables disponibles:</strong> x, y, A, f, phi, Border_Factor<br>
+                <strong>Variables disponibles:</strong> x, y, A, f, phi, a1-a5<br>
                 <strong>Funciones:</strong> sin, cos, tan, log, exp, sqrt, abs, PI, E<br>
                 <strong>Operadores:</strong> +, -, *, /, ^, ( )<br>
-                <strong>Parámetros:</strong> Usa A, f, phi, Border_Factor para valores ajustables
+                <strong>Parámetros f(x,y):</strong> a1(x³), a2(y³), a3(x²), a4(y²), a5(x²y²)
             </div>
         </div>
         
         <div id="examples">
             <h4 style="margin: 0 0 10px 0; color: #00bcd4;">Ejemplos Populares</h4>
-            <button class="example-btn" onclick="loadExample('(5*exp(-((x-2)^2+(y-2)^2)) - 1.5*exp(-(x^2+y^2)) + 0.5*(x - 1)^2 - 0.5*(y - 1)^2) * (1 - Border_Factor)')">Función G(x,y) Compleja</button>
-            <button class="example-btn" onclick="loadExample('A * (sin(f*x + phi) + sin(f*(-x/2 + y*sqrt(3)/2) + phi) + sin(f*(-x/2 - y*sqrt(3)/2) + phi)) / 3')">Ondas Triangulares</button>
-            <button class="example-btn" onclick="loadExample('A * sin(f*x + phi) * cos(f*y)')">Ondas Moduladas</button>
+            <button class="example-btn" onclick="loadExample('a1*x^3 + a2*y^3 + a3*x^2 + a4*y^2 + a5*x^2*y^2')">Función f(x,y) - Análisis</button>
+            <button class="example-btn" onclick="loadExample('(1 - (x^2 + y^2)/20)^2 * (1 - ((x - 2)^2 + (y - 2)^2)/20)^2 * (x - 1) * (y - 1)')">Función g(x,y) - Condiciones Especiales</button>
             <button class="example-btn" onclick="loadExample('A * sin(f*sqrt(x^2 + y^2) + phi)')">Ondas Radiales</button>
+            <button class="example-btn" onclick="loadExample('A * sin(f*x + phi) * cos(f*y)')">Ondas Moduladas</button>
             <button class="example-btn" onclick="loadExample('A * exp(-(x^2 + y^2) / f)')">Campana Gaussiana</button>
             <button class="example-btn" onclick="loadExample('(y^2 - x^2) / 4')">Paraboloide Hiperbólico</button>
             <button class="example-btn" onclick="loadExample('A * cos(f*x + phi) * sin(f*y)')">Ondas Cruzadas</button>
             <button class="example-btn" onclick="loadExample('A * sin(f*x*y + phi)')">Interferencia XY</button>
-            <button class="example-btn" onclick="loadExample('A * (sin(f*x) + cos(f*y) + phi)')">Ondas Sumadas</button>
-            <button class="example-btn" onclick="loadExample('A * exp(-f*sqrt(x^2 + y^2)) * sin(phi*sqrt(x^2 + y^2))')">Onda Amortiguada</button>
         </div>
 
         <div id="parameters">
-            <h4 style="margin: 0 0 15px 0; color: #00bcd4;">Parámetros Dinámicos</h4>
+            <h4 style="margin: 0 0 15px 0; color: #00bcd4;">Parámetros</h4>
             
             <div class="param-item">
                 <div class="param-label">Amplitud (A)</div>
@@ -510,42 +256,64 @@
                 <input type="range" id="phi" class="param-slider" min="0" max="6.28" step="0.1" value="0">
             </div>
             
+            <hr style="border: 1px solid #00bcd4; margin: 15px 0;">
+            <h5 style="margin: 0 0 10px 0; color: #00bcd4;">Función f(x,y)</h5>
+            
             <div class="param-item">
-                <div class="param-label">Border Factor</div>
-                <div class="param-value" id="Border_Factor-value">0.1</div>
-                <input type="range" id="Border_Factor" class="param-slider" min="0" max="1" step="0.01" value="0.1">
+                <div class="param-label">x³ (a1)</div>
+                <div class="param-value" id="a1-value">-0.25</div>
+                <input type="range" id="a1" class="param-slider" min="-1" max="1" step="0.01" value="-0.25">
+            </div>
+            
+            <div class="param-item">
+                <div class="param-label">y³ (a2)</div>
+                <div class="param-value" id="a2-value">-0.25</div>
+                <input type="range" id="a2" class="param-slider" min="-1" max="1" step="0.01" value="-0.25">
+            </div>
+            
+            <div class="param-item">
+                <div class="param-label">x² (a3)</div>
+                <div class="param-value" id="a3-value">0.50</div>
+                <input type="range" id="a3" class="param-slider" min="-1" max="1" step="0.01" value="0.5">
+            </div>
+            
+            <div class="param-item">
+                <div class="param-label">y² (a4)</div>
+                <div class="param-value" id="a4-value">0.50</div>
+                <input type="range" id="a4" class="param-slider" min="-1" max="1" step="0.01" value="0.5">
+            </div>
+            
+            <div class="param-item">
+                <div class="param-label">x²y² (a5)</div>
+                <div class="param-value" id="a5-value">-0.25</div>
+                <input type="range" id="a5" class="param-slider" min="-1" max="1" step="0.01" value="-0.25">
             </div>
             
             <div style="margin-top: 15px;">
                 <input type="checkbox" id="auto-update" checked>
-                <label for="auto-update" style="font-size: 11px; margin-left: 5px;">Actualización automática</label>
+                <label for="auto-update" style="font-size: 11px; margin-left: 5px;">Auto-actualizar</label>
             </div>
         </div>
 
         <div id="controls">
-            <button class="collapsible">Controles de Visualización</button>
-            <div class="content">
-                <div style="padding: 15px;">
-                    <div class="control-item">
-                        <label>Resolución: <input type="range" id="resolution" min="20" max="100" value="80"></label>
-                    </div>
-                    <div class="control-item">
-                        <label>Rango: <input type="range" id="range" min="1" max="10" value="5"></label>
-                    </div>
-                    <div class="control-item">
-                        <label>Espesor: <input type="range" id="thickness" min="0.1" max="2" step="0.1" value="0.2"></label>
-                    </div>
-                    <div class="control-item">
-                        <label>Altura Z: <input type="range" id="zScale" min="0.1" max="3" step="0.1" value="1.5"></label>
-                    </div>
-                    <div class="control-item">
-                        <label>Opacidad: <input type="range" id="opacity" min="0.1" max="1" step="0.1" value="0.8"></label>
-                    </div>
-                    <div class="control-item">
-                        <button id="exportSTL">Exportar STL</button>
-                        <button onclick="toggleWireframe()">Wireframe</button>
-                    </div>
-                </div>
+            <div class="control-item">
+                <label>Resolución: <input type="range" id="resolution" min="20" max="100" value="50"></label>
+            </div>
+            <div class="control-item">
+                <label>Rango: <input type="range" id="range" min="1" max="10" value="4"></label>
+            </div>
+            <div class="control-item">
+                <label>Espesor: <input type="range" id="thickness" min="0.1" max="2" step="0.1" value="0.3"></label>
+            </div>
+            <div class="control-item">
+                <label>Altura Z: <input type="range" id="zScale" min="0.1" max="3" step="0.1" value="1"></label>
+            </div>
+            <div class="control-item">
+                <label>Opacidad: <input type="range" id="opacity" min="0.1" max="1" step="0.1" value="0.8"></label>
+            </div>
+            <div class="control-item">
+                <button id="exportSTL">Exportar STL</button>
+                <button onclick="toggleWireframe()">Wireframe</button>
             </div>
         </div>
     </div>
@@ -1086,27 +854,6 @@
 
         // Inicializar cuando se carga la página
         init();
-
-        // Agregar funcionalidad de menús colapsables
-        document.addEventListener('DOMContentLoaded', function() {
-            var coll = document.getElementsByClassName("collapsible");
-            for (var i = 0; i < coll.length; i++) {
-                coll[i].addEventListener("click", function() {
-                    this.classList.toggle("active");
-                    var content = this.nextElementSibling;
-                    if (content.style.maxHeight) {
-                        content.style.maxHeight = null;
-                        content.classList.remove("show");
-                    } else {
-                        content.style.maxHeight = content.scrollHeight + "px";
-                        content.classList.add("show");
-                    }
-                });
-            }
-
-            // Abrir el panel de ecuación por defecto
-            document.querySelector("#equation-panel .collapsible").click();
-        });
     </script>
 </body>
-</html> 
+</html>
