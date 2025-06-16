@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador 3D de Ecuaciones</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #ffffff, #e0f7fa, #00bcd4);
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+        
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #header {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 12px;
+            backdrop-filter: blur(15px);
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            border: 2px solid #00bcd4;
+        }
+        
+        #header h1 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: bold;
+            color: #00bcd4;
+            letter-spacing: 1px;
+        }
+        
+        #header h2 {
+            margin: 5px 0 0 0;
+            font-size: 14px;
+            font-weight: normal;
+            color: white;
+            opacity: 0.9;
+        }
+        
+        #equation-panel {
+            position: absolute;
+            top: 100px;
+            left: 20px;
+            color: white;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            min-width: 300px;
+            max-width: 400px;
+            border: 2px solid #00bcd4;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 2px solid #00bcd4;
+            max-width: 200px;
+        }
+        
+        #examples {
+            position: absolute;
+            top: 100px;
+            right: 20px;
+            color: white;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            max-width: 250px;
+            border: 2px solid #00bcd4;
+        }
+        
+        #parameters {
+            position: absolute;
+            top: 200px;
+            right: 20px;
+            color: white;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 2px solid #00bcd4;
+            max-width: 220px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        
+        .control-item {
+            margin: 8px 0;
+        }
+        
+        .param-item {
+            margin: 10px 0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .param-label {
+            font-size: 12px;
+            margin-bottom: 5px;
+            color: #00bcd4;
+            font-weight: bold;
+        }
+        
+        .param-value {
+            font-size: 11px;
+            color: #ccc;
+            margin-bottom: 3px;
+        }
+        
+        .param-slider {
+            width: 100%;
+        }
+        
+        input[type="range"] {
+            width: 150px;
+            margin-left: 10px;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.9);
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        button {
+            background: #00bcd4;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px 5px 5px 0;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #0097a7;
+        }
+        
+        .example-btn {
+            background: #00bcd4;
+            font-size: 11px;
+            padding: 4px 8px;
+            margin: 2px;
+            color: white;
+        }
+        
+        .example-btn:hover {
+            background: #0097a7;
+        }
+        
+        .error {
+            color: #ff6b6b;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        .success {
+            color: #00ff88;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        #equation-info {
+            font-size: 12px;
+            color: #ccc;
+            margin-top: 10px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="header">
+            <h1>DESIGN ENGINEERING CENTER</h1>
+            <h2>Generador 3D de Ecuaciones Matemáticas</h2>
+        </div>
+        
+        <div id="equation-panel">
+            <h3 style="margin: 0 0 15px 0; color: #00bcd4;">Generador 3D de Ecuaciones</h3>
+            <label style="font-size: 14px; font-weight: bold;">Ecuación z = f(x, y):</label>
+            <input type="text" id="equation" value="a1*x^3 + a2*y^3 + a3*x^2 + a4*y^2 + a5*x^2*y^2" placeholder="Ej: A * sin(f*x + phi)">
+            <div id="equation-status"></div>
+            <button onclick="generateSurface()">Generar Superficie</button>
+            <button onclick="resetView()">Centrar Vista</button>
+            
+            <div id="equation-info">
+                <strong>Variables disponibles:</strong> x, y, A, f, phi, a1-a5<br>
+                <strong>Funciones:</strong> sin, cos, tan, log, exp, sqrt, abs, PI, E<br>
+                <strong>Operadores:</strong> +, -, *, /, ^, ( )<br>
+                <strong>Parámetros f(x,y):</strong> a1(x³), a2(y³), a3(x²), a4(y²), a5(x²y²)
+            </div>
+        </div>
+        
+        <div id="examples">
+            <h4 style="margin: 0 0 10px 0; color: #00bcd4;">Ejemplos Populares</h4>
+            <button class="example-btn" onclick="loadExample('a1*x^3 + a2*y^3 + a3*x^2 + a4*y^2 + a5*x^2*y^2')">Función f(x,y) - Análisis</button>
+            <button class="example-btn" onclick="loadExample('(1 - (x^2 + y^2)/20)^2 * (1 - ((x - 2)^2 + (y - 2)^2)/20)^2 * (x - 1) * (y - 1)')">Función g(x,y) - Condiciones Especiales</button>
+            <button class="example-btn" onclick="loadExample('A * sin(f*sqrt(x^2 + y^2) + phi)')">Ondas Radiales</button>
+            <button class="example-btn" onclick="loadExample('A * sin(f*x + phi) * cos(f*y)')">Ondas Moduladas</button>
+            <button class="example-btn" onclick="loadExample('A * exp(-(x^2 + y^2) / f)')">Campana Gaussiana</button>
+            <button class="example-btn" onclick="loadExample('(y^2 - x^2) / 4')">Paraboloide Hiperbólico</button>
+            <button class="example-btn" onclick="loadExample('A * cos(f*x + phi) * sin(f*y)')">Ondas Cruzadas</button>
+            <button class="example-btn" onclick="loadExample('A * sin(f*x*y + phi)')">Interferencia XY</button>
+        </div>
+
+        <div id="parameters">
+            <h4 style="margin: 0 0 15px 0; color: #00bcd4;">Parámetros</h4>
+            
+            <div class="param-item">
+                <div class="param-label">Amplitud (A)</div>
+                <div class="param-value" id="A-value">2.0</div>
+                <input type="range" id="A" class="param-slider" min="0.1" max="5" step="0.1" value="2">
+            </div>
+            
+            <div class="param-item">
+                <div class="param-label">Frecuencia (f)</div>
+                <div class="param-value" id="f-value">2.0</div>
+                <input type="range" id="f" class="param-slider" min="0.1" max="10" step="0.1" value="2">
+            </div>
+            
+            <div class="param-item">
+                <div class="param-label">Fase (phi)</div>
+                <div class="param-value" id="phi-value">0.0</div>
+                <input type="range" id="phi" class="param-slider" min="0" max="6.28" step="0.1" value="0">
+            </div>
+            
+            <hr style="border: 1px solid #00bcd4; margin: 15px 0;">
+            <h5 style="margin: 0 0 10px 0; color: #00bcd4;">Función f(x,y)</h5>
+            
+            <div class="param-item">
+                <div class="param-label">x³ (a1)</div>
+                <div class="param-value" id="a1-value">-0.25</div>
+                <input type="range" id="a1" class="param-slider" min="-1" max="1" step="0.01" value="-0.25">
+            </div>
+            
+            <div class="param-item">
+                <div class="param-label">y³ (a2)</div>
+                <div class="param-value" id="a2-value">-0.25</div>
+                <input type="range" id="a2" class="param-slider" min="-1" max="1" step="0.01" value="-0.25">
+            </div>
+            
+            <div class="param-item">
+                <div class="param-label">x² (a3)</div>
+                <div class="param-value" id="a3-value">0.50</div>
+                <input type="range" id="a3" class="param-slider" min="-1" max="1" step="0.01" value="0.5">
+            </div>
+            
+            <div class="param-item">
+                <div class="param-label">y² (a4)</div>
+                <div class="param-value" id="a4-value">0.50</div>
+                <input type="range" id="a4" class="param-slider" min="-1" max="1" step="0.01" value="0.5">
+            </div>
+            
+            <div class="param-item">
+                <div class="param-label">x²y² (a5)</div>
+                <div class="param-value" id="a5-value">-0.25</div>
+                <input type="range" id="a5" class="param-slider" min="-1" max="1" step="0.01" value="-0.25">
+            </div>
+            
+            <div style="margin-top: 15px;">
+                <input type="checkbox" id="auto-update" checked>
+                <label for="auto-update" style="font-size: 11px; margin-left: 5px;">Auto-actualizar</label>
+            </div>
+        </div>
+
+        <div id="controls">
+            <div class="control-item">
+                <label>Resolución: <input type="range" id="resolution" min="20" max="100" value="50"></label>
+            </div>
+            <div class="control-item">
+                <label>Rango: <input type="range" id="range" min="1" max="10" value="4"></label>
+            </div>
+            <div class="control-item">
+                <label>Espesor: <input type="range" id="thickness" min="0.1" max="2" step="0.1" value="0.3"></label>
+            </div>
+            <div class="control-item">
+                <label>Altura Z: <input type="range" id="zScale" min="0.1" max="3" step="0.1" value="1"></label>
+            </div>
+            <div class="control-item">
+                <label>Opacidad: <input type="range" id="opacity" min="0.1" max="1" step="0.1" value="0.8"></label>
+            </div>
+            <div class="control-item">
+                <button id="exportSTL">Exportar STL</button>
+                <button onclick="toggleWireframe()">Wireframe</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
+    <script>
+        let scene, camera, renderer, surface, wireframe;
+        let currentEquation = "a1*x^3 + a2*y^3 + a3*x^2 + a4*y^2 + a5*x^2*y^2";
+        let showWireframe = true;
+        let parameters = {
+            A: 2.0,
+            f: 2.0,
+            phi: 0.0,
+            a1: -0.25,
+            a2: -0.25,
+            a3: 0.5,
+            a4: 0.5,
+            a5: -0.25
+        };
+        let controls = {
+            isMouseDown: false,
+            mouseX: 0,
+            mouseY: 0,
+            rotationX: 0.3,
+            rotationY: 0.5
+        };
+
+        function init() {
+            // Crear escena
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf0f0f0);
+
+            // Crear cámara
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(8, 8, 8);
+            camera.lookAt(0, 0, 0);
+
+            // Crear renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('container').appendChild(renderer.domElement);
+
+            // Agregar luces
+            addLights();
+
+            // Agregar ejes de coordenadas
+            addAxes();
+
+            // Event listeners
+            addEventListeners();
+
+            // Iniciar animación
+            animate();
+
+            // Generar superficie inicial
+            setTimeout(() => {
+                updateParameterValues();
+                generateSurface();
+            }, 100);
+        }
+
+        function loadExample(equation) {
+            document.getElementById('equation').value = equation;
+            generateSurface();
+        }
+
+        function resetView() {
+            controls.rotationX = 0.3;
+            controls.rotationY = 0.5;
+            camera.position.set(8, 8, 8);
+            updateCameraPosition();
+        }
+
+        function toggleWireframe() {
+            showWireframe = !showWireframe;
+            if (wireframe) {
+                wireframe.visible = showWireframe;
+            }
+        }
+
+        function validateAndParseEquation(equation) {
+            try {
+                const testExpr = math.parse(equation);
+                const testCompiled = testExpr.compile();
+                
+                const testScope = {
+                    x: 1, y: 1, 
+                    A: parameters.A, f: parameters.f, phi: parameters.phi,
+                    a1: parameters.a1, a2: parameters.a2, a3: parameters.a3, a4: parameters.a4, a5: parameters.a5
+                };
+                testCompiled.evaluate(testScope);
+                testCompiled.evaluate({
+                    x: 0, y: 0, 
+                    A: parameters.A, f: parameters.f, phi: parameters.phi,
+                    a1: parameters.a1, a2: parameters.a2, a3: parameters.a3, a4: parameters.a4, a5: parameters.a5
+                });
+                testCompiled.evaluate({
+                    x: -1, y: -1, 
+                    A: parameters.A, f: parameters.f, phi: parameters.phi,
+                    a1: parameters.a1, a2: parameters.a2, a3: parameters.a3, a4: parameters.a4, a5: parameters.a5
+                });
+                
+                return { success: true, compiled: testCompiled };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        function generateSurface() {
+            const equationText = document.getElementById('equation').value.trim();
+            const statusDiv = document.getElementById('equation-status');
+            
+            if (!equationText) {
+                statusDiv.innerHTML = '<div class="error">Por favor ingresa una ecuación</div>';
+                return;
+            }
+
+            const validation = validateAndParseEquation(equationText);
+            
+            if (!validation.success) {
+                statusDiv.innerHTML = `<div class="error">Error: ${validation.error}</div>`;
+                return;
+            }
+
+            statusDiv.innerHTML = '<div class="success">✓ Ecuación válida - Generando superficie...</div>';
+            currentEquation = equationText;
+            
+            setTimeout(() => {
+                try {
+                    createSurface(validation.compiled);
+                    statusDiv.innerHTML = '<div class="success">✓ Superficie generada correctamente</div>';
+                } catch (error) {
+                    statusDiv.innerHTML = `<div class="error">Error al generar: ${error.message}</div>`;
+                }
+            }, 100);
+        }
+
+        function createSurface(compiledEquation) {
+            const resolution = parseInt(document.getElementById('resolution').value);
+            const range = parseInt(document.getElementById('range').value);
+            const thickness = parseFloat(document.getElementById('thickness').value);
+            const zScale = parseFloat(document.getElementById('zScale').value);
+            const opacity = parseFloat(document.getElementById('opacity').value);
+
+            // Eliminar superficie anterior si existe
+            if (surface) scene.remove(surface);
+            if (wireframe) scene.remove(wireframe);
+
+            // Crear geometría sólida con espesor
+            const geometry = createSolidGeometry(resolution, range, thickness, zScale, compiledEquation);
+
+            // Material para la superficie
+            const material = new THREE.MeshPhongMaterial({
+                color: 0x00bcd4,
+                transparent: true,
+                opacity: opacity,
+                side: THREE.DoubleSide,
+                shininess: 100
+            });
+
+            surface = new THREE.Mesh(geometry, material);
+            surface.receiveShadow = true;
+            surface.castShadow = true;
+            scene.add(surface);
+
+            // Crear wireframe
+            const wireframeMaterial = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.2
+            });
+
+            wireframe = new THREE.Mesh(geometry.clone(), wireframeMaterial);
+            wireframe.visible = showWireframe;
+            scene.add(wireframe);
+        }
+
+        function createSolidGeometry(resolution, range, thickness, zScale, compiledEquation) {
+            const geometry = new THREE.BufferGeometry();
+            const vertices = [];
+            const indices = [];
+            
+            // Función para calcular z según la ecuación compilada
+            function calculateZ(x, y) {
+                try {
+                    const scope = {
+                        x: x, y: y, 
+                        A: parameters.A, f: parameters.f, phi: parameters.phi,
+                        a1: parameters.a1, a2: parameters.a2, a3: parameters.a3, a4: parameters.a4, a5: parameters.a5
+                    };
+                    const result = compiledEquation.evaluate(scope);
+                    if (typeof result !== 'number' || !isFinite(result)) {
+                        return 0;
+                    }
+                    return result * zScale;
+                } catch (error) {
+                    return 0;
+                }
+            }
+
+            // Crear grid de puntos
+            const step = (range * 2) / resolution;
+            const gridVertices = [];
+            
+            for (let i = 0; i <= resolution; i++) {
+                gridVertices[i] = [];
+                for (let j = 0; j <= resolution; j++) {
+                    const x = -range + i * step;
+                    const y = -range + j * step;
+                    const z = calculateZ(x, y);
+                    gridVertices[i][j] = { x, y, z };
+                }
+            }
+
+            // Agregar vértices de la superficie superior
+            for (let i = 0; i <= resolution; i++) {
+                for (let j = 0; j <= resolution; j++) {
+                    const vertex = gridVertices[i][j];
+                    vertices.push(vertex.x, vertex.y, vertex.z);
+                }
+            }
+
+            // Agregar vértices de la superficie inferior
+            for (let i = 0; i <= resolution; i++) {
+                for (let j = 0; j <= resolution; j++) {
+                    const vertex = gridVertices[i][j];
+                    vertices.push(vertex.x, vertex.y, vertex.z - thickness);
+                }
+            }
+
+            const pointsPerRow = resolution + 1;
+            const totalTopPoints = pointsPerRow * pointsPerRow;
+
+            // Crear caras para la superficie superior
+            for (let i = 0; i < resolution; i++) {
+                for (let j = 0; j < resolution; j++) {
+                    const a = i * pointsPerRow + j;
+                    const b = i * pointsPerRow + (j + 1);
+                    const c = (i + 1) * pointsPerRow + (j + 1);
+                    const d = (i + 1) * pointsPerRow + j;
+
+                    indices.push(a, b, c);
+                    indices.push(a, c, d);
+                }
+            }
+
+            // Crear caras para la superficie inferior (orden invertido)
+            for (let i = 0; i < resolution; i++) {
+                for (let j = 0; j < resolution; j++) {
+                    const a = totalTopPoints + i * pointsPerRow + j;
+                    const b = totalTopPoints + i * pointsPerRow + (j + 1);
+                    const c = totalTopPoints + (i + 1) * pointsPerRow + (j + 1);
+                    const d = totalTopPoints + (i + 1) * pointsPerRow + j;
+
+                    indices.push(a, c, b);
+                    indices.push(a, d, c);
+                }
+            }
+
+            // Crear caras laterales (bordes)
+            // Borde i = 0 (izquierdo)
+            for (let j = 0; j < resolution; j++) {
+                const topA = 0 * pointsPerRow + j;
+                const topB = 0 * pointsPerRow + (j + 1);
+                const bottomA = totalTopPoints + 0 * pointsPerRow + j;
+                const bottomB = totalTopPoints + 0 * pointsPerRow + (j + 1);
+
+                indices.push(topA, bottomA, topB);
+                indices.push(topB, bottomA, bottomB);
+            }
+
+            // Borde i = resolution (derecho)
+            for (let j = 0; j < resolution; j++) {
+                const topA = resolution * pointsPerRow + j;
+                const topB = resolution * pointsPerRow + (j + 1);
+                const bottomA = totalTopPoints + resolution * pointsPerRow + j;
+                const bottomB = totalTopPoints + resolution * pointsPerRow + (j + 1);
+
+                indices.push(topA, topB, bottomA);
+                indices.push(topB, bottomB, bottomA);
+            }
+
+            // Borde j = 0 (frontal)
+            for (let i = 0; i < resolution; i++) {
+                const topA = i * pointsPerRow + 0;
+                const topB = (i + 1) * pointsPerRow + 0;
+                const bottomA = totalTopPoints + i * pointsPerRow + 0;
+                const bottomB = totalTopPoints + (i + 1) * pointsPerRow + 0;
+
+                indices.push(topA, topB, bottomA);
+                indices.push(topB, bottomB, bottomA);
+            }
+
+            // Borde j = resolution (trasero)
+            for (let i = 0; i < resolution; i++) {
+                const topA = i * pointsPerRow + resolution;
+                const topB = (i + 1) * pointsPerRow + resolution;
+                const bottomA = totalTopPoints + i * pointsPerRow + resolution;
+                const bottomB = totalTopPoints + (i + 1) * pointsPerRow + resolution;
+
+                indices.push(topA, bottomA, topB);
+                indices.push(topB, bottomA, bottomB);
+            }
+
+            geometry.setIndex(indices);
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            geometry.computeVertexNormals();
+
+            return geometry;
+        }
+
+        function addLights() {
+            // Luz ambiental
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+            scene.add(ambientLight);
+
+            // Luz direccional
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 10, 5);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+
+            // Luz puntual colorida
+            const pointLight = new THREE.PointLight(0x00ffff, 0.5, 50);
+            pointLight.position.set(-5, 5, 5);
+            scene.add(pointLight);
+        }
+
+        function addAxes() {
+            // Eje X (rojo)
+            const xGeometry = new THREE.CylinderGeometry(0.02, 0.02, 10);
+            const xMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            const xAxis = new THREE.Mesh(xGeometry, xMaterial);
+            xAxis.rotation.z = Math.PI / 2;
+            scene.add(xAxis);
+
+            // Eje Y (verde)
+            const yGeometry = new THREE.CylinderGeometry(0.02, 0.02, 10);
+            const yMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+            const yAxis = new THREE.Mesh(yGeometry, yMaterial);
+            scene.add(yAxis);
+
+            // Eje Z (azul)
+            const zGeometry = new THREE.CylinderGeometry(0.02, 0.02, 10);
+            const zMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+            const zAxis = new THREE.Mesh(zGeometry, zMaterial);
+            zAxis.rotation.x = Math.PI / 2;
+            scene.add(zAxis);
+        }
+
+        function updateParameterValues() {
+            parameters.A = parseFloat(document.getElementById('A').value);
+            parameters.f = parseFloat(document.getElementById('f').value);
+            parameters.phi = parseFloat(document.getElementById('phi').value);
+            parameters.a1 = parseFloat(document.getElementById('a1').value);
+            parameters.a2 = parseFloat(document.getElementById('a2').value);
+            parameters.a3 = parseFloat(document.getElementById('a3').value);
+            parameters.a4 = parseFloat(document.getElementById('a4').value);
+            parameters.a5 = parseFloat(document.getElementById('a5').value);
+            
+            document.getElementById('A-value').textContent = parameters.A.toFixed(1);
+            document.getElementById('f-value').textContent = parameters.f.toFixed(1);
+            document.getElementById('phi-value').textContent = parameters.phi.toFixed(1);
+            document.getElementById('a1-value').textContent = parameters.a1.toFixed(2);
+            document.getElementById('a2-value').textContent = parameters.a2.toFixed(2);
+            document.getElementById('a3-value').textContent = parameters.a3.toFixed(2);
+            document.getElementById('a4-value').textContent = parameters.a4.toFixed(2);
+            document.getElementById('a5-value').textContent = parameters.a5.toFixed(2);
+            
+            if (document.getElementById('auto-update').checked && currentEquation) {
+                generateSurface();
+            }
+        }
+
+        function addEventListeners() {
+            // Controles de mouse
+            renderer.domElement.addEventListener('mousedown', onMouseDown);
+            renderer.domElement.addEventListener('mousemove', onMouseMove);
+            renderer.domElement.addEventListener('mouseup', onMouseUp);
+            renderer.domElement.addEventListener('wheel', onWheel);
+
+            // Controles de interfaz
+            document.getElementById('resolution').addEventListener('input', () => {
+                if (currentEquation) generateSurface();
+            });
+            document.getElementById('range').addEventListener('input', () => {
+                if (currentEquation) generateSurface();
+            });
+            document.getElementById('thickness').addEventListener('input', () => {
+                if (currentEquation) generateSurface();
+            });
+            document.getElementById('zScale').addEventListener('input', () => {
+                if (currentEquation) generateSurface();
+            });
+            document.getElementById('opacity').addEventListener('input', () => {
+                if (currentEquation) generateSurface();
+            });
+            
+            document.getElementById('exportSTL').addEventListener('click', exportSTL);
+            document.getElementById('equation').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') generateSurface();
+            });
+
+            // Configurar controles de parámetros
+            ['A', 'f', 'phi', 'a1', 'a2', 'a3', 'a4', 'a5'].forEach(param => {
+                document.getElementById(param).addEventListener('input', updateParameterValues);
+            });
+            
+            document.getElementById('auto-update').addEventListener('change', () => {
+                if (document.getElementById('auto-update').checked && currentEquation) {
+                    generateSurface();
+                }
+            });
+
+            // Redimensionar ventana
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function onMouseDown(event) {
+            controls.isMouseDown = true;
+            controls.mouseX = event.clientX;
+            controls.mouseY = event.clientY;
+        }
+
+        function onMouseMove(event) {
+            if (!controls.isMouseDown) return;
+
+            const deltaX = event.clientX - controls.mouseX;
+            const deltaY = event.clientY - controls.mouseY;
+
+            controls.rotationY += deltaX * 0.01;
+            controls.rotationX += deltaY * 0.01;
+
+            controls.rotationX = Math.max(-Math.PI/2, Math.min(Math.PI/2, controls.rotationX));
+
+            updateCameraPosition();
+
+            controls.mouseX = event.clientX;
+            controls.mouseY = event.clientY;
+        }
+
+        function onMouseUp(event) {
+            controls.isMouseDown = false;
+        }
+
+        function onWheel(event) {
+            const distance = camera.position.length();
+            const newDistance = distance + event.deltaY * 0.01;
+            
+            if (newDistance > 2 && newDistance < 50) {
+                const factor = newDistance / distance;
+                camera.position.multiplyScalar(factor);
+            }
+        }
+
+        function updateCameraPosition() {
+            const distance = camera.position.length();
+            camera.position.x = distance * Math.cos(controls.rotationX) * Math.cos(controls.rotationY);
+            camera.position.y = distance * Math.sin(controls.rotationX);
+            camera.position.z = distance * Math.cos(controls.rotationX) * Math.sin(controls.rotationY);
+            camera.lookAt(0, 0, 0);
+        }
+
+        function exportSTL() {
+            if (!surface) {
+                alert('Primero genera una superficie');
+                return;
+            }
+
+            const geometry = surface.geometry;
+            const vertices = geometry.attributes.position.array;
+            const indices = geometry.index.array;
+
+            let stlString = `solid ${currentEquation.replace(/[^a-zA-Z0-9]/g, '_')}\n`;
+
+            for (let i = 0; i < indices.length; i += 3) {
+                const a = indices[i] * 3;
+                const b = indices[i + 1] * 3;
+                const c = indices[i + 2] * 3;
+
+                const v1 = new THREE.Vector3(vertices[a], vertices[a + 1], vertices[a + 2]);
+                const v2 = new THREE.Vector3(vertices[b], vertices[b + 1], vertices[b + 2]);
+                const v3 = new THREE.Vector3(vertices[c], vertices[c + 1], vertices[c + 2]);
+
+                const cb = new THREE.Vector3();
+                const ab = new THREE.Vector3();
+                cb.subVectors(v3, v2);
+                ab.subVectors(v1, v2);
+                cb.cross(ab);
+                cb.normalize();
+
+                stlString += `  facet normal ${cb.x.toFixed(6)} ${cb.y.toFixed(6)} ${cb.z.toFixed(6)}\n`;
+                stlString += '    outer loop\n';
+                stlString += `      vertex ${v1.x.toFixed(6)} ${v1.y.toFixed(6)} ${v1.z.toFixed(6)}\n`;
+                stlString += `      vertex ${v2.x.toFixed(6)} ${v2.y.toFixed(6)} ${v2.z.toFixed(6)}\n`;
+                stlString += `      vertex ${v3.x.toFixed(6)} ${v3.y.toFixed(6)} ${v3.z.toFixed(6)}\n`;
+                stlString += '    endloop\n';
+                stlString += '  endfacet\n';
+            }
+
+            stlString += `endsolid ${currentEquation.replace(/[^a-zA-Z0-9]/g, '_')}`;
+
+            const blob = new Blob([stlString], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ecuacion_3d_${currentEquation.replace(/[^a-zA-Z0-9]/g, '_')}.stl`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            alert('¡Archivo STL exportado exitosamente!');
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (!controls.isMouseDown) {
+                controls.rotationY += 0.005;
+                updateCameraPosition();
+            }
+            
+            renderer.render(scene, camera);
+        }
+
+        // Inicializar cuando se carga la página
+        init();
+    </script>
+</body>
+</html>
