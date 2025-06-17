@@ -1,4 +1,4 @@
-# Generador 3D de Ecuaciones Matemáticas / 3D Mathematical Equation Generator
+# Generador de modelos 3D de Ecuaciones Matemáticas 
 
 **Autor / Author:** Sebastián Duarte Villanueva  
 **Coautor / Co-author:** Claude.ai  
@@ -9,7 +9,7 @@
 Este proyecto permite visualizar y generar modelos 3D de funciones matemáticas de dos variables (x, y) de manera interactiva usando Three.js y Math.js. Puedes ingresar tu propia ecuación en el campo correspondiente y ajustar parámetros como amplitud, frecuencia, fase, rango, resolución y más.
 
 ### ¿Cómo usar?
-1. Abre el archivo `index.html` en tu navegador.
+1. Abre el archivo `https://sebasdv.github.io/3Dgenerator/` en tu navegador.
 2. Escribe tu ecuación en el campo "Ecuación z = f(x, y)". Ejemplo:
    ```
    -0.25*x^3 - 0.25*y^3 + 0.5*x^2 + 0.5*y^2 - 0.25*x^2*y^2
@@ -33,7 +33,7 @@ Ingresa:
 This project allows you to visualize and generate 3D models of mathematical functions of two variables (x, y) interactively using Three.js and Math.js. You can enter your own equation and adjust parameters such as amplitude, frequency, phase, range, resolution, and more.
 
 ### How to use?
-1. Open the `index.html` file in your browser.
+1. Open the `https://sebasdv.github.io/3Dgenerator/` in your browser.
 2. Enter your equation in the "Ecuación z = f(x, y)" field. Example:
    ```
    -0.25*x^3 - 0.25*y^3 + 0.5*x^2 + 0.5*y^2 - 0.25*x^2*y^2
