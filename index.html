@@ -239,16 +239,17 @@
             width: 90%;
             max-width: 900px;
             max-height: 85vh;
-            background: linear-gradient(135deg, #ffffff, #f8f9fa);
-            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 15px;
             padding: 0;
             overflow: hidden;
             box-shadow: 0 25px 80px rgba(0,0,0,0.6);
-            border: 3px solid #00bcd4;
+            border: 2px solid #00bcd4;
+            backdrop-filter: blur(10px);
         }
 
         .help-header {
-            background: linear-gradient(135deg, #00bcd4, #0097a7);
+            background: rgba(0, 0, 0, 0.9);
             color: white;
             padding: 20px 30px;
             display: flex;
@@ -259,19 +260,20 @@
 
         .help-header h2 {
             margin: 0;
-            font-size: 24px;
+            font-size: 20px;
             font-weight: bold;
+            color: #00bcd4;
         }
 
         .close-btn {
             background: rgba(255,255,255,0.2);
-            border: 2px solid white;
-            color: white;
-            width: 40px;
-            height: 40px;
+            border: 2px solid #00bcd4;
+            color: #00bcd4;
+            width: 35px;
+            height: 35px;
             border-radius: 50%;
             cursor: pointer;
-            font-size: 18px;
+            font-size: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -279,7 +281,8 @@
         }
 
         .close-btn:hover {
-            background: rgba(255,255,255,0.3);
+            background: #00bcd4;
+            color: white;
             transform: scale(1.1);
         }
 
@@ -287,30 +290,36 @@
             padding: 30px;
             max-height: calc(85vh - 100px);
             overflow-y: auto;
+            color: white;
         }
 
         .help-section {
-            margin-bottom: 30px;
+            margin-bottom: 25px;
             padding: 20px;
-            background: white;
-            border-radius: 15px;
-            border-left: 5px solid #00bcd4;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            border-left: 3px solid #00bcd4;
         }
 
         .help-section h3 {
             color: #00bcd4;
             margin: 0 0 15px 0;
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .help-section h4 {
+            color: #00bcd4;
+            margin: 15px 0 8px 0;
+            font-size: 14px;
+            font-weight: bold;
         }
 
         .help-section p {
             margin: 10px 0;
             line-height: 1.6;
-            color: #333;
+            color: #ccc;
+            font-size: 13px;
         }
 
         .help-section ul {
@@ -321,35 +330,45 @@
         .help-section li {
             margin: 8px 0;
             line-height: 1.5;
+            color: #ccc;
+            font-size: 13px;
         }
 
         .code-example {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #00bcd4;
             border-radius: 8px;
             padding: 15px;
             margin: 10px 0;
             font-family: 'Courier New', monospace;
-            font-size: 14px;
-            color: #495057;
+            font-size: 13px;
+            color: #00bcd4;
             overflow-x: auto;
         }
 
         .tip-box {
-            background: #e3f2fd;
-            border: 1px solid #2196f3;
+            background: rgba(0, 188, 212, 0.1);
+            border: 1px solid #00bcd4;
             border-radius: 8px;
             padding: 15px;
             margin: 15px 0;
         }
 
         .tip-box h4 {
-            color: #1976d2;
+            color: #00bcd4;
             margin: 0 0 10px 0;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .tip-box p {
+            color: #ccc;
+            margin: 0;
+            font-size: 13px;
         }
 
         .warning-box {
-            background: #fff3e0;
+            background: rgba(255, 152, 0, 0.1);
             border: 1px solid #ff9800;
             border-radius: 8px;
             padding: 15px;
@@ -357,8 +376,16 @@
         }
 
         .warning-box h4 {
-            color: #f57c00;
+            color: #ff9800;
             margin: 0 0 10px 0;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .warning-box p {
+            color: #ccc;
+            margin: 0;
+            font-size: 13px;
         }
 
         .help-btn {
@@ -399,7 +426,7 @@
             }
             
             .help-header h2 {
-                font-size: 20px;
+                font-size: 18px;
             }
         }
     </style>
@@ -525,12 +552,12 @@
     <div class="help-modal" id="helpModal">
         <div class="help-content">
             <div class="help-header">
-                <h2>📚 Guía de Ayuda - Generador 3D</h2>
+                <h2>Guía de Ayuda - Generador 3D</h2>
                 <button class="close-btn" onclick="closeHelp()">✕</button>
             </div>
             <div class="help-body">
                 <div class="help-section">
-                    <h3>🔤 Sintaxis Matemática</h3>
+                    <h3>Sintaxis Matemática</h3>
                     <p>El generador utiliza la biblioteca Math.js para evaluar expresiones matemáticas. Aquí tienes las reglas principales:</p>
                     
                     <h4>Operadores:</h4>
@@ -565,7 +592,7 @@
                 </div>
 
                 <div class="help-section">
-                    <h3>⚙️ Parámetros y Variables</h3>
+                    <h3>Parámetros y Variables</h3>
                     <p>El generador tiene dos tipos de parámetros que puedes usar:</p>
                     
                     <h4>Parámetros generales (A, f, phi):</h4>
@@ -585,13 +612,13 @@
                     </ul>
 
                     <div class="tip-box">
-                        <h4>💡 Tip:</h4>
+                        <h4>Tip:</h4>
                         <p>Activa "Auto-actualizar" para ver los cambios en tiempo real mientras mueves los sliders. Desactívalo si la función es compleja y el rendimiento es lento.</p>
                     </div>
                 </div>
 
                 <div class="help-section">
-                    <h3>🎮 Controles de Visualización</h3>
+                    <h3>Controles de Visualización</h3>
                     <p>Usa estos controles para ajustar la apariencia de tu superficie 3D:</p>
                     
                     <h4>Controles de calidad:</h4>
@@ -613,10 +640,10 @@
                 </div>
 
                 <div class="help-section">
-                    <h3>🚨 Problemas Comunes</h3>
+                    <h3>Problemas Comunes</h3>
                     
                     <div class="warning-box">
-                        <h4>⚠️ "Invalid expression"</h4>
+                        <h4>"Invalid expression"</h4>
                         <p><strong>Causas comunes:</strong></p>
                         <ul>
                             <li>Usar <code>**</code> en lugar de <code>^</code> para potencias</li>
@@ -627,7 +654,7 @@
                     </div>
 
                     <div class="warning-box">
-                        <h4>⚠️ Superficie plana o sin cambios</h4>
+                        <h4>Superficie plana o sin cambios</h4>
                         <p><strong>Posibles causas:</strong></p>
                         <ul>
                             <li>La función no depende de x o y</li>
@@ -638,7 +665,7 @@
                     </div>
 
                     <div class="warning-box">
-                        <h4>⚠️ Rendimiento lento</h4>
+                        <h4>Rendimiento lento</h4>
                         <p><strong>Soluciones:</strong></p>
                         <ul>
                             <li>Reduce la resolución</li>
@@ -650,7 +677,7 @@
                 </div>
 
                 <div class="help-section">
-                    <h3>📁 Exportación STL</h3>
+                    <h3>Exportación STL</h3>
                     <p>Puedes exportar tu superficie como archivo STL para impresión 3D:</p>
                     
                     <ul>
@@ -661,13 +688,13 @@
                     </ul>
 
                     <div class="tip-box">
-                        <h4>💡 Tip para impresión 3D:</h4>
+                        <h4>Tip para impresión 3D:</h4>
                         <p>Para mejores resultados, usa un espesor de al menos 0.5 y una resolución de 50 o más. Funciones con muchas variaciones pueden requerir soportes en tu slicer.</p>
                     </div>
                 </div>
 
                 <div class="help-section">
-                    <h3>🎓 Casos de Uso Avanzados</h3>
+                    <h3>Casos de Uso Avanzados</h3>
                     
                     <h4>Análisis de extremos:</h4>
                     <p>Para funciones como f(x,y) = -0.25x³ - 0.25y³ + 0.5x² + 0.5y² - 0.25x²y²:</p>
