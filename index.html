@@ -1430,7 +1430,7 @@
         function init() {
             // Crear escena
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xf0f0f0);
+            scene.background = new THREE.Color(0x9bbc0f); // GameBoy primary green
 
             // Crear cámara
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -1655,7 +1655,7 @@
 
             // Material para la superficie
             const material = new THREE.MeshPhongMaterial({
-                color: 0x00bcd4,
+                color: 0x306230, // GameBoy accent green
                 transparent: true,
                 opacity: opacity,
                 side: THREE.DoubleSide,
@@ -1669,10 +1669,10 @@
 
             // Crear wireframe
             const wireframeMaterial = new THREE.MeshBasicMaterial({
-                color: 0xffffff,
+                color: 0x0f380f, // GameBoy dark green
                 wireframe: true,
                 transparent: true,
-                opacity: 0.2
+                opacity: 0.3
             });
 
             wireframe = new THREE.Mesh(geometry.clone(), wireframeMaterial);
@@ -1828,7 +1828,7 @@
             scene.add(directionalLight);
 
             // Luz puntual colorida
-            const pointLight = new THREE.PointLight(0x00ffff, 0.5, 50);
+            const pointLight = new THREE.PointLight(0x8bac0f, 0.5, 50); // GameBoy secondary green
             pointLight.position.set(-5, 5, 5);
             scene.add(pointLight);
         }
