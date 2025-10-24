@@ -57,7 +57,7 @@
 
         /* Controls sidebar */
         #controls-sidebar {
-            width: 350px;
+            width: 420px;
             background: var(--gb-surface);
             border-left: 1px solid var(--gb-border);
             overflow-y: auto;
@@ -90,17 +90,18 @@
         }
 
         .param-slider-inline label {
-            flex: 0 0 120px;
+            flex: 0 0 100px;
             font-size: var(--font-size-sm);
             margin: 0;
         }
 
         .param-slider-inline input[type="range"] {
             flex: 1;
+            min-width: 180px;
         }
 
         .param-slider-inline .param-value {
-            flex: 0 0 60px;
+            flex: 0 0 50px;
             text-align: right;
             font-size: var(--font-size-sm);
             font-weight: 600;
@@ -130,11 +131,13 @@
             #controls-sidebar {
                 position: fixed;
                 top: 0;
-                right: -350px;
+                right: -420px;
                 height: 100vh;
                 z-index: 150;
                 transition: right 0.3s ease;
                 box-shadow: var(--shadow-lg);
+                width: 90vw;
+                max-width: 420px;
             }
 
             #controls-sidebar.active {
