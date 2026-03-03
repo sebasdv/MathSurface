@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEC Design System | MAKER + LAB</title>
+    <!-- Modern Typography: Inter + JetBrains Mono (Tech) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+
+    <style>
+        /* 
+         * =========================================
+         * DEC DESIGN SYSTEM - TECH UPGRADE
+         * =========================================
+         */
+        :root {
+            /* BRAND CORE */
+            --dec-blue-primary: #009FE3;
+            --dec-blue-dark: #0077A9;
+            --dec-blue-glow: rgba(0, 159, 227, 0.4);
+
+            --dec-orange-safety: #FF671F;
+            --dec-orange-dark: #D64B00;
+            --dec-orange-glow: rgba(255, 103, 31, 0.4);
+
+            --dec-yellow-warning: #FFD500;
+
+            /* NEUTRAL & TECH */
+            --dec-dark-bg: #F0F2F5;
+            --dec-panel-bg: #FFFFFF;
+            --dec-text-main: #111827;
+            --dec-text-muted: #6B7280;
+            --dec-border: #E5E7EB;
+            --dec-border-active: #9CA3AF;
+
+            /* FONTS */
+            --font-sans: 'Inter', system-ui, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+
+            /* ANIMATION & DEPTH */
+            --ease-punch: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --shadow-float: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --shadow-glow-blue: 0 0 15px var(--dec-blue-glow);
+
+            /* GRID PATTERN (Encoded SVG) */
+            --bg-grid: url('data:image/svg+xml;utf8,<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><circle cx="2" cy="2" r="1" fill="%23cbd5e1" opacity="0.4"/></svg>');
+        }
+
+        /* 
+         * GLOBAL RESET 
+         */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--dec-dark-bg);
+            background-image: var(--bg-grid);
+            color: var(--dec-text-main);
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        /* 
+         * UTILITIES & TYPOGRAPHY
+         */
+        h1,
+        h2,
+        h3,
+        h4 {
+            letter-spacing: -0.03em;
+            font-weight: 800;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            line-height: 1.1;
+        }
+
+        h2 {
+            font-size: 2.25rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: 5px;
+            right: -20px;
+            width: 10px;
+            height: 10px;
+            background: var(--dec-orange-safety);
+        }
+
+        .font-mono {
+            font-family: var(--font-mono);
+            letter-spacing: -0.05em;
+        }
+
+        .text-blue {
+            color: var(--dec-blue-primary);
+        }
+
+        .text-orange {
+            color: var(--dec-orange-safety);
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* 
+         * COMPONENTS: NAV
+         */
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--dec-border);
+            padding: 1rem 0;
+        }
+
+        .nav-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            font-size: 1.5rem;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .brand-tag {
+            background: var(--dec-orange-safety);
+            color: white;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transform: rotate(-5deg);
+        }
+
+        /* 
+         * COMPONENTS: CARDS (MECHANICAL)
+         */
+        .tech-card {
+            background: var(--dec-panel-bg);
+            border: 1px solid var(--dec-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            position: relative;
+            transition: all 0.3s var(--ease-punch);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Decoration: Corner Markers */
+        .tech-card::before {
+            content: '+';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-family: var(--font-mono);
+            color: var(--dec-border-active);
+            font-weight: 900;
+        }
+
+        .tech-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0%;
+            height: 4px;
+            background: var(--dec-blue-primary);
+            transition: width 0.3s ease;
+        }
+
+        /* Hover Effect: Lift & Border Highlight */
+        .tech-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-float);
+            border-color: var(--dec-blue-primary);
+        }
+
+        .tech-card:hover::after {
+            width: 100%;
+        }
+
+        .card-label {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--dec-text-muted);
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* 
+         * BENTO GRID LAYOUTS 
+         */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-auto-rows: minmax(180px, auto);
+            gap: 1.5rem;
+            margin-bottom: 4rem;
+        }
+
+        /* Spans for Bento Effects */
+        .span-2 {
+            grid-column: span 2;
+        }
+
+        .span-4 {
+            grid-column: span 4;
+        }
+
+        .row-2 {
+            grid-row: span 2;
+        }
+
+        @media (max-width: 768px) {
+            .bento-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .span-2,
+            .span-4 {
+                grid-column: span 1;
+            }
+        }
+
+        /* 
+         * SAFETY MODULES
+         */
+        .safety-box {
+            border-left: 6px solid var(--dec-gray-200);
+        }
+
+        .safety-box.critical {
+            border-color: var(--dec-orange-safety);
+            background: #FFF4F0;
+        }
+
+        .safety-box.warning {
+            border-color: var(--dec-yellow-warning);
+            background: #FFFBED;
+        }
+
+        .safety-box.info {
+            border-color: var(--dec-blue-primary);
+            background: #F0F9FF;
+        }
+
+        .safety-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        /* 
+         * BUTTONS
+         */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            font-weight: 700;
+            border-radius: 6px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .btn:active {
+            transform: scale(0.96);
+        }
+
+        .btn-primary {
+            background: var(--dec-blue-primary);
+            color: white;
+            box-shadow: 0 4px 0 var(--dec-blue-dark);
+        }
+
+        .btn-primary:active {
+            box-shadow: 0 0 0 transparent;
+            transform: translateY(4px);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            border: 2px solid var(--dec-border);
+            color: var(--dec-text-main);
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--dec-text-main);
+        }
+
+        /* 
+         * SECTIONS
+         */
+        .hero {
+            padding: 6rem 0;
+            text-align: center;
+            background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.8), transparent 70%);
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="container nav-inner">
+            <div class="brand">
+                DEC <span class="text-blue">DESIGN</span> SYSTEM <span class="brand-tag">v2.0</span>
+            </div>
+            <div style="display:flex; gap:1.5rem; font-weight:600; font-size:0.9rem;">
+                <a href="#rules" style="color:var(--dec-text-main); text-decoration:none;">Normas</a>
+                <a href="#machines" style="color:var(--dec-text-main); text-decoration:none;">Máquinas</a>
+                <a href="#emergency" style="color:var(--dec-orange-safety); text-decoration:none;">Emergencia</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <header class="hero">
+        <div class="container">
+            <div class="font-mono text-blue" style="margin-bottom:1rem;">MAKER + LAB // 2026</div>
+            <h1>Ingeniería con <br> <span class="text-blue">Foco en las Personas</span></h1>
+            <p style="max-width:60ch; margin: 1.5rem auto; font-size:1.25rem; color:var(--dec-text-muted);">
+                Educamos, aplicamos, exploramos y conectamos los métodos, herramientas y principios del diseño para
+                facilitar el desarrollo tecnológico de productos.
+            </p>
+            <div style="display:flex; gap:1rem; justify-content:center;">
+                <button class="btn btn-primary">Ver Documentación</button>
+                <button class="btn btn-ghost">Descargar PDF</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <!-- BENTO GRID: SAFETY RULES -->
+        <section id="rules">
+            <h2>Normas de Seguridad <span class="font-mono"
+                    style="font-size:1rem; color:var(--dec-gray-200); font-weight:400;">// SAFETY PROTOCOLS</span></h2>
+
+            <div class="bento-grid">
+                <!-- Large Item: Critical -->
+                <div class="tech-card safety-box critical span-2 row-2">
+                    <div class="card-label"><span>PRIORIDAD 01</span> <span>OBLIGATORIO</span></div>
+                    <span class="safety-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            style="color:var(--dec-orange-dark);">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
+                    </span>
+                    <h3 style="font-size:1.75rem; color:var(--dec-orange-dark);">Protección Personal</h3>
+                    <p>Siempre que utilices máquinas o herramientas debes utilizar los elementos de protección personal
+                        correspondientes (Lentes, protección auditiva).</p>
+                    <div style="margin-top:auto; font-weight:bold;">
+                        SI NO TE LOS ENTREGAN, TÚ DEBES SOLICITARLOS.
+                    </div>
+                </div>
+
+                <!-- Regular Item: Hair -->
+                <div class="tech-card safety-box warning">
+                    <div class="card-label"><span>PRECAUCIÓN</span> <span>GENERAL</span></div>
+                    <h4 style="color:#92400E;">Pelo Largo</h4>
+                    <p>Personas con pelo largo deben mantenerlo siempre tomado al trabajar.</p>
+                </div>
+
+                <!-- Regular Item: Shoes -->
+                <div class="tech-card safety-box critical">
+                    <div class="card-label"><span>PROHIBIDO</span> <span>VESTIMENTA</span></div>
+                    <h4 style="color:var(--dec-orange-dark);">Calzado</h4>
+                    <p>Prohibido estrictamente el uso de calzado descubierto (chalas) en el taller.</p>
+                </div>
+
+                <!-- Wide Item: Food/Drink -->
+                <div class="tech-card safety-box info span-2">
+                    <div class="card-label"><span>NORMA DE CONVIVENCIA</span> <span>LAB</span></div>
+                    <h4 style="color:var(--dec-blue-dark);">Alimentos y Bebidas</h4>
+                    <p>No comer dentro del Centro. Los líquidos se deben mantener siempre en recipientes cerrados (agua
+                        o café).</p>
+                </div>
+
+                <!-- Regular Item: Bags -->
+                <div class="tech-card">
+                    <div class="card-label"><span>ORDEN</span> <span>ESPACIO</span></div>
+                    <h4>Mochilas</h4>
+                    <p>Mantener mochilas en casilleros o bajo las mesas. Jamás en el suelo (Riesgo de tropiezo).</p>
+                </div>
+
+                <!-- Regular Item: Floor -->
+                <div class="tech-card" style="border-bottom: 4px solid var(--dec-yellow-warning);">
+                    <div class="card-label"><span>SEÑALÉTICA</span> <span>VISUAL</span></div>
+                    <h4>Líneas Amarillas</h4>
+                    <p>Nunca sobrepasar demarcaciones de peligro o zonas de almacenaje.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- MACHINES GRID -->
+        <section id="machines" style="margin-top:6rem;">
+            <h2>Labs & Máquinas <span class="font-mono"
+                    style="font-size:1rem; color:var(--dec-gray-200); font-weight:400;">// RESOURCES</span></h2>
+
+            <div class="bento-grid">
+                <!-- Machine 1 -->
+                <div class="tech-card">
+                    <div class="card-label"><span>CNC-01</span> <span class="text-blue">● ONLINE</span></div>
+                    <div
+                        style="height:120px; background:#eee; margin-bottom:1rem; border-radius:4px; display:flex; align-items:center; justify-content:center; color:#aaa;">
+                        [ IMG: ROUTER CNC ]
+                    </div>
+                    <h3>Router CNC</h3>
+                    <p style="font-size:0.9rem; color:var(--dec-text-muted);">
+                        Corte automatizado para grandes formatos.
+                    </p>
+                    <button class="btn btn-ghost" style="margin-top:1rem; width:100%;">Reservar Bloque</button>
+                </div>
+
+                <!-- Machine 2 -->
+                <div class="tech-card">
+                    <div class="card-label"><span>LSR-02</span> <span class="text-blue">● ONLINE</span></div>
+                    <div
+                        style="height:120px; background:#eee; margin-bottom:1rem; border-radius:4px; display:flex; align-items:center; justify-content:center; color:#aaa;">
+                        [ IMG: CORTADORA LASER ]
+                    </div>
+                    <h3>Cortadora Láser</h3>
+                    <p style="font-size:0.9rem; color:var(--dec-text-muted);">
+                        Grabado y corte de precisión.
+                    </p>
+                    <button class="btn btn-ghost" style="margin-top:1rem; width:100%;">Reservar Bloque</button>
+                </div>
+
+                <!-- Machine 3 -->
+                <div class="tech-card">
+                    <div class="card-label"><span>PRT-3D</span> <span class="text-orange">● MAINTENANCE</span></div>
+                    <div
+                        style="height:120px; background:#eee; margin-bottom:1rem; border-radius:4px; display:flex; align-items:center; justify-content:center; color:#aaa;">
+                        [ IMG: IMPRESORAS 3D ]
+                    </div>
+                    <h3>Impresión 3D</h3>
+                    <p style="font-size:0.9rem; color:var(--dec-text-muted);">
+                        Farm de impresoras PLA/ABS.
+                    </p>
+                    <button class="btn btn-ghost"
+                        style="margin-top:1rem; width:100%; opacity:0.5; cursor:not-allowed;">No Disponible</button>
+                </div>
+
+                <!-- Feature: Prototyping -->
+                <div class="tech-card span-1" style="background: var(--dec-gray-900); color:white; border:none;">
+                    <div class="card-label" style="color:#aaa;"><span>SERVICIOS</span></div>
+                    <h3 style="font-size:1.5rem;">Fabricación de Prototipos</h3>
+                    <p style="color:#888;">Asesoría experta para llevar tu idea a la realidad.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- EMERGENCY SECTION -->
+        <section id="emergency" style="margin-top:6rem; margin-bottom:6rem;">
+            <div class="tech-card" style="border-left:8px solid var(--dec-orange-safety);">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:2rem; align-items:center;">
+                    <div>
+                        <h2 style="color:var(--dec-orange-safety); margin-top:0;">En Caso de Accidente</h2>
+                        <p style="font-size:1.25rem;">Si el accidente es mayor a un corte leve, contactar en el
+                            siguiente orden:</p>
+
+                        <div style="display:flex; flex-direction:column; gap:1rem; margin-top:2rem;">
+                            <!-- Contact 1 -->
+                            <div style="display:flex; gap:1rem; align-items:center;">
+                                <div
+                                    style="background:var(--dec-orange-safety); color:white; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold;">
+                                    1</div>
+                                <div>
+                                    <div style="font-weight:bold;">Enfermera Campus (Constanza González)</div>
+                                    <div class="font-mono text-blue">Anexo 1302 / +56 9 6337 8899</div>
+                                </div>
+                            </div>
+                            <!-- Contact 2 -->
+                            <div style="display:flex; gap:1rem; align-items:center;">
+                                <div
+                                    style="background:var(--dec-orange-safety); color:white; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold;">
+                                    2</div>
+                                <div>
+                                    <div style="font-weight:bold;">Coord. Ejecutiva (Isabel Iturriaga)</div>
+                                    <div class="font-mono text-blue">Anexo 1304 / +56 9 9889 7526</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        style="background:#FFF4F0; padding:2rem; border-radius:12px; text-align:center; border:2px dashed var(--dec-orange-safety);">
+                        <h3 style="color:var(--dec-orange-dark);">AMBULANCIAS MEXICARE</h3>
+                        <p>Solo Alumnos UAI</p>
+                        <div style="font-size:3rem; font-weight:900; color:var(--dec-text-main); line-height:1;">22 884
+                            8477</div>
+                        <div class="font-mono" style="margin-top:1rem; color:var(--dec-orange-dark);">Lunes a Sábado
+                            <br> 08:00 - 21:00 hrs
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer style="background:white; border-top:1px solid var(--dec-border); padding:3rem 0; text-align:center;">
+        <div class="container">
+            <div class="brand" style="justify-content:center; margin-bottom:1rem; opacity:0.5;">
+                DEC DESIGN ENGINEERING CENTER
+            </div>
+            <p style="color:var(--dec-text-muted); font-size:0.9rem;">
+                Design Tokens & Components Library v2.0 <br>
+                Based on DEC 2020.pdf & Normas de Seguridad
+            </p>
+        </div>
+    </footer>
+
+</body>
+
+</html>
