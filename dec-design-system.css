@@ -445,6 +445,8 @@ body {
 }
 
 .modal-content { margin-bottom: 1.25rem; font-size: 0.875rem; color: var(--dec-text-muted); line-height: 1.7; }
+.modal-source-link { display: block; font-size: 0.82rem; color: var(--dec-blue-primary); text-decoration: none; margin-bottom: 1rem; }
+.modal-source-link:hover { text-decoration: underline; }
 .modal-content h3 { color: var(--dec-text-main); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin: 0.75rem 0 0.25rem; }
 .modal-content code { font-family: var(--font-mono); font-size: 0.78rem; background: var(--dec-dark-bg); padding: 1px 5px; border-radius: 3px; color: var(--dec-blue-primary); }
 
