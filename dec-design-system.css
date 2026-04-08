@@ -389,9 +389,9 @@ body {
 @media (max-width: 768px) {
     #controls-sidebar {
         position: fixed;
-        top: 0;
+        top: 52px;
         right: -420px;
-        height: 100vh;
+        height: calc(100vh - 52px);
         z-index: 150;
         transition: right 0.3s ease;
         box-shadow: var(--shadow-float);
