@@ -1,0 +1,12 @@
+# Design reference materials (internal, not for distribution)
+DECDESIGNSYSTEM/
+
+# Editor config
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Large binaries
+*.pdf
