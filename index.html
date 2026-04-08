@@ -27,7 +27,8 @@
             </div>
             <div style="display:flex; align-items:center; gap:0.75rem;">
                 <span class="font-mono" style="font-size:0.65rem; color:var(--dec-text-muted);">z = f(x, y)</span>
-                <button class="btn btn-ghost" style="padding:0.4rem 0.9rem; font-size:0.78rem;" onclick="openHelp()">Help</button>
+                <button class="btn btn-ghost" id="lang-toggle" style="padding:0.4rem 0.9rem; font-size:0.78rem;" onclick="toggleLang()">ES</button>
+                <button class="btn btn-ghost" style="padding:0.4rem 0.9rem; font-size:0.78rem;" onclick="openHelp()" data-i18n="help">Help</button>
             </div>
         </div>
 
@@ -37,22 +38,22 @@
             <!-- 3D CANVAS -->
             <div id="canvas-container">
                 <div id="dim-overlay">
-                    <span class="dim-label">Dimensiones del modelo</span>
+                    <span class="dim-label" data-i18n="modelDimensions">Model Dimensions</span>
                     <div class="dim-row">
                         <div class="dim-item">
-                            <span class="dim-label">Ancho (X)</span>
+                            <span class="dim-label" data-i18n="dimWidth">Width (X)</span>
                             <span class="dim-value" id="dim-x">— mm</span>
                         </div>
                         <div class="dim-item">
-                            <span class="dim-label">Largo (Y)</span>
+                            <span class="dim-label" data-i18n="dimLength">Length (Y)</span>
                             <span class="dim-value" id="dim-y">— mm</span>
                         </div>
                         <div class="dim-item">
-                            <span class="dim-label">Alto (Z)</span>
+                            <span class="dim-label" data-i18n="dimHeight">Height (Z)</span>
                             <span class="dim-value" id="dim-z">— mm</span>
                         </div>
                         <div class="dim-item">
-                            <span class="dim-label">Escala</span>
+                            <span class="dim-label" data-i18n="dimScale">Scale</span>
                             <span class="dim-value" id="dim-scale">10 mm/u</span>
                         </div>
                     </div>
@@ -65,7 +66,7 @@
                 <!-- Equation input -->
                 <div class="equation-group">
                     <div class="section-label">
-                        <span>Ecuación  z = f(x, y)</span>
+                        <span data-i18n="equation">Equation z = f(x, y)</span>
                         <span class="font-mono text-blue">INPUT</span>
                     </div>
                     <input type="text" id="equation" class="equation-input-full"
@@ -73,8 +74,8 @@
                            placeholder="e.g., A * sin(f*x + phi)">
                     <div id="equation-status"></div>
                     <div class="button-group">
-                        <button class="btn btn-primary" onclick="generateSurface()">▶ Generate</button>
-                        <button class="btn btn-ghost" onclick="resetView()">↺ Reset</button>
+                        <button class="btn btn-primary" onclick="generateSurface()" data-i18n="generate">▶ Generate</button>
+                        <button class="btn btn-ghost" onclick="resetView()" data-i18n="reset">↺ Reset</button>
                     </div>
                 </div>
 
@@ -84,7 +85,7 @@
                     <!-- Examples -->
                     <div class="accordion-item">
                         <button class="accordion-header" onclick="toggleAccordion('examples')">
-                            Popular Examples
+                            <span data-i18n="examples">Popular Examples</span>
                         </button>
                         <div class="accordion-content" id="examples-accordion">
                             <div class="accordion-body">
@@ -103,27 +104,27 @@
                     <!-- Wave Parameters -->
                     <div class="accordion-item">
                         <button class="accordion-header active" onclick="toggleAccordion('wave-params')">
-                            Wave Parameters
+                            <span data-i18n="waveParams">Wave Parameters</span>
                         </button>
                         <div class="accordion-content active" id="wave-params-accordion">
                             <div class="accordion-body">
                                 <div class="param-slider-inline">
-                                    <label>A (Amplitud)</label>
+                                    <label>A (<span data-i18n="amplitude">Amplitude</span>)</label>
                                     <input type="range" id="A" min="0.1" max="5" step="0.1" value="2">
                                     <span class="param-value" id="A-value">2.0</span>
                                 </div>
                                 <div class="param-slider-inline">
-                                    <label>f (Frecuencia)</label>
+                                    <label>f (<span data-i18n="frequency">Frequency</span>)</label>
                                     <input type="range" id="f" min="0.1" max="10" step="0.1" value="2">
                                     <span class="param-value" id="f-value">2.0</span>
                                 </div>
                                 <div class="param-slider-inline">
-                                    <label>φ (Fase)</label>
+                                    <label>φ (<span data-i18n="phase">Phase</span>)</label>
                                     <input type="range" id="phi" min="0" max="6.28" step="0.1" value="0">
                                     <span class="param-value" id="phi-value">0.0</span>
                                 </div>
                                 <div class="toggle-row">
-                                    <span>Auto-update</span>
+                                    <span data-i18n="autoUpdate">Auto-update</span>
                                     <label class="toggle-switch-wrap">
                                         <input type="checkbox" id="auto-update" checked>
                                         <span class="toggle-track"></span>
@@ -136,7 +137,7 @@
                     <!-- Polynomial Parameters -->
                     <div class="accordion-item">
                         <button class="accordion-header active" onclick="toggleAccordion('function-params')">
-                            Polynomial f(x,y)
+                            <span data-i18n="polynomial">Polynomial f(x,y)</span>
                         </button>
                         <div class="accordion-content active" id="function-params-accordion">
                             <div class="accordion-body">
@@ -172,43 +173,43 @@
                     <!-- Visualization Controls -->
                     <div class="accordion-item">
                         <button class="accordion-header" onclick="toggleAccordion('viz-controls')">
-                            Visualization
+                            <span data-i18n="visualization">Visualization</span>
                         </button>
                         <div class="accordion-content" id="viz-controls-accordion">
                             <div class="accordion-body">
                                 <div class="param-slider-inline">
-                                    <label>Resolution</label>
+                                    <label data-i18n="resolution">Resolution</label>
                                     <input type="range" id="resolution" min="20" max="100" value="50">
                                     <span class="param-value" id="resolution-value">50</span>
                                 </div>
                                 <div class="param-slider-inline">
-                                    <label>Range</label>
+                                    <label data-i18n="range">Range</label>
                                     <input type="range" id="range" min="1" max="10" value="4">
                                     <span class="param-value" id="range-value">4</span>
                                 </div>
                                 <div class="param-slider-inline">
-                                    <label>Thickness</label>
+                                    <label data-i18n="thickness">Thickness</label>
                                     <input type="range" id="thickness" min="0.1" max="2" step="0.1" value="0.3">
                                     <span class="param-value" id="thickness-value">0.3</span>
                                 </div>
                                 <div class="param-slider-inline">
-                                    <label>Z Scale</label>
+                                    <label data-i18n="zScale">Z Scale</label>
                                     <input type="range" id="zScale" min="0.1" max="3" step="0.1" value="1">
                                     <span class="param-value" id="zScale-value">1.0</span>
                                 </div>
                                 <div class="param-slider-inline">
-                                    <label>Opacity</label>
+                                    <label data-i18n="opacity">Opacity</label>
                                     <input type="range" id="opacity" min="0.1" max="1" step="0.1" value="0.8">
                                     <span class="param-value" id="opacity-value">0.8</span>
                                 </div>
                                 <div class="param-slider-inline">
-                                    <label>mm / unidad</label>
+                                    <label data-i18n="mmPerUnit">mm / unit</label>
                                     <input type="range" id="mmPerUnit" min="1" max="50" step="1" value="10">
                                     <span class="param-value" id="mmPerUnit-value">10 mm</span>
                                 </div>
                                 <div class="action-row">
-                                    <button class="btn btn-primary" id="exportSTL">↓ Export STL</button>
-                                    <button class="btn btn-ghost" onclick="toggleWireframe()">⬡ Wireframe</button>
+                                    <button class="btn btn-primary" id="exportSTL" data-i18n="exportSTL">↓ Export STL</button>
+                                    <button class="btn btn-ghost" onclick="toggleWireframe()" data-i18n="wireframe">⬡ Wireframe</button>
                                 </div>
                             </div>
                         </div>
@@ -227,16 +228,16 @@
         <div class="modal">
             <h2 class="modal-title">MathSurface</h2>
             <div class="modal-content">
-                <h3>Funciones disponibles</h3>
+                <h3 data-i18n="helpFunctions">Available Functions</h3>
                 <p><code>sin</code> <code>cos</code> <code>tan</code> <code>exp</code> <code>log</code> <code>sqrt</code> <code>abs</code></p>
-                <h3>Constantes</h3>
+                <h3 data-i18n="helpConstants">Constants</h3>
                 <p><code>PI</code> &nbsp; <code>E</code></p>
-                <h3>Variables</h3>
+                <h3 data-i18n="helpVariables">Variables</h3>
                 <p><code>x</code> <code>y</code> <code>A</code> <code>f</code> <code>phi</code> <code>a1</code>…<code>a5</code></p>
-                <h3>Operadores</h3>
-                <p><code>+</code> <code>-</code> <code>*</code> <code>/</code> <code>^</code> (potencia)</p>
+                <h3 data-i18n="helpOperators">Operators</h3>
+                <p><code>+</code> <code>-</code> <code>*</code> <code>/</code> <code>^</code> (<span data-i18n="helpPower">power</span>)</p>
             </div>
-            <button class="btn btn-primary" style="width:100%;" onclick="closeHelp()">Cerrar</button>
+            <button class="btn btn-primary" style="width:100%;" onclick="closeHelp()" data-i18n="close">Close</button>
         </div>
     </div>
 
@@ -787,8 +788,95 @@
             document.getElementById('helpModal').classList.remove('show');
         }
 
+        // i18n
+        const translations = {
+            en: {
+                equation:         'Equation z = f(x, y)',
+                generate:         '▶ Generate',
+                reset:            '↺ Reset',
+                examples:         'Popular Examples',
+                waveParams:       'Wave Parameters',
+                amplitude:        'Amplitude',
+                frequency:        'Frequency',
+                phase:            'Phase',
+                autoUpdate:       'Auto-update',
+                polynomial:       'Polynomial f(x,y)',
+                visualization:    'Visualization',
+                resolution:       'Resolution',
+                range:            'Range',
+                thickness:        'Thickness',
+                zScale:           'Z Scale',
+                opacity:          'Opacity',
+                mmPerUnit:        'mm / unit',
+                exportSTL:        '↓ Export STL',
+                wireframe:        '⬡ Wireframe',
+                modelDimensions:  'Model Dimensions',
+                dimWidth:         'Width (X)',
+                dimLength:        'Length (Y)',
+                dimHeight:        'Height (Z)',
+                dimScale:         'Scale',
+                help:             'Help',
+                helpFunctions:    'Available Functions',
+                helpConstants:    'Constants',
+                helpVariables:    'Variables',
+                helpOperators:    'Operators',
+                helpPower:        'power',
+                close:            'Close',
+            },
+            es: {
+                equation:         'Ecuación z = f(x, y)',
+                generate:         '▶ Generar',
+                reset:            '↺ Reiniciar',
+                examples:         'Ejemplos populares',
+                waveParams:       'Parámetros de onda',
+                amplitude:        'Amplitud',
+                frequency:        'Frecuencia',
+                phase:            'Fase',
+                autoUpdate:       'Auto-actualizar',
+                polynomial:       'Polinomio f(x,y)',
+                visualization:    'Visualización',
+                resolution:       'Resolución',
+                range:            'Rango',
+                thickness:        'Grosor',
+                zScale:           'Escala Z',
+                opacity:          'Opacidad',
+                mmPerUnit:        'mm / unidad',
+                exportSTL:        '↓ Exportar STL',
+                wireframe:        '⬡ Wireframe',
+                modelDimensions:  'Dimensiones del modelo',
+                dimWidth:         'Ancho (X)',
+                dimLength:        'Largo (Y)',
+                dimHeight:        'Alto (Z)',
+                dimScale:         'Escala',
+                help:             'Ayuda',
+                helpFunctions:    'Funciones disponibles',
+                helpConstants:    'Constantes',
+                helpVariables:    'Variables',
+                helpOperators:    'Operadores',
+                helpPower:        'potencia',
+                close:            'Cerrar',
+            }
+        };
+
+        let currentLang = 'en';
+
+        function applyLang(lang) {
+            const t = translations[lang];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key] !== undefined) el.textContent = t[key];
+            });
+            document.getElementById('lang-toggle').textContent = lang === 'en' ? 'ES' : 'EN';
+        }
+
+        function toggleLang() {
+            currentLang = currentLang === 'en' ? 'es' : 'en';
+            applyLang(currentLang);
+        }
+
         // Initialize
         init();
+        applyLang(currentLang);
     </script>
 </body>
 </html>
