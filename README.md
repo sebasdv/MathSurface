@@ -2,7 +2,7 @@
 
 **Autor / Author:** Sebastián Duarte Villanueva ([@sebasdv](https://github.com/sebasdv))  
 **Co-author:** Claude.ai  
-**Live demo:** https://sebasdv.github.io/3Dgenerator/
+**Live demo:** https://sebasdv.github.io/MathSurface/
 
 ---
 
@@ -11,7 +11,7 @@
 Generador interactivo de superficies matemáticas 3D para impresión 3D. Visualiza y exporta funciones z = f(x, y) como archivos STL listos para imprimir, usando Three.js y Math.js.
 
 ### ¿Cómo usar?
-1. Abre la [demo](https://sebasdv.github.io/3Dgenerator/) en tu navegador.
+1. Abre la [demo](https://sebasdv.github.io/MathSurface/) en tu navegador.
 2. Escribe tu ecuación en el campo "Ecuación z = f(x, y)". Ejemplo:
    ```
    -0.25*x^3 - 0.25*y^3 + 0.5*x^2 + 0.5*y^2 - 0.25*x^2*y^2
@@ -34,7 +34,7 @@ Generador interactivo de superficies matemáticas 3D para impresión 3D. Visuali
 Interactive 3D math surface generator for 3D printing. Visualize and export z = f(x, y) equations as print-ready STL files, powered by Three.js and Math.js.
 
 ### How to use
-1. Open the [live demo](https://sebasdv.github.io/3Dgenerator/) in your browser.
+1. Open the [live demo](https://sebasdv.github.io/MathSurface/) in your browser.
 2. Enter your equation in the "Ecuación z = f(x, y)" field. Example:
    ```
    -0.25*x^3 - 0.25*y^3 + 0.5*x^2 + 0.5*y^2 - 0.25*x^2*y^2
