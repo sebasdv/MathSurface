@@ -37,27 +37,6 @@
 
             <!-- 3D CANVAS -->
             <div id="canvas-container">
-                <div id="dim-overlay">
-                    <span class="dim-label" data-i18n="modelDimensions">Model Dimensions</span>
-                    <div class="dim-row">
-                        <div class="dim-item">
-                            <span class="dim-label" data-i18n="dimWidth">Width (X)</span>
-                            <span class="dim-value" id="dim-x">— mm</span>
-                        </div>
-                        <div class="dim-item">
-                            <span class="dim-label" data-i18n="dimLength">Length (Y)</span>
-                            <span class="dim-value" id="dim-y">— mm</span>
-                        </div>
-                        <div class="dim-item">
-                            <span class="dim-label" data-i18n="dimHeight">Height (Z)</span>
-                            <span class="dim-value" id="dim-z">— mm</span>
-                        </div>
-                        <div class="dim-item">
-                            <span class="dim-label" data-i18n="dimScale">Scale</span>
-                            <span class="dim-value" id="dim-scale">10 mm/u</span>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <!-- CONTROLS SIDEBAR -->
@@ -222,6 +201,29 @@
 
     <!-- Mobile FAB -->
     <button id="mobile-controls-toggle" onclick="toggleMobileControls()">⚙</button>
+
+    <!-- DIM OVERLAY (outside canvas to avoid overflow:hidden clipping) -->
+    <div id="dim-overlay">
+        <span class="dim-label" data-i18n="modelDimensions">Model Dimensions</span>
+        <div class="dim-row">
+            <div class="dim-item">
+                <span class="dim-label" data-i18n="dimWidth">Width (X)</span>
+                <span class="dim-value" id="dim-x">— mm</span>
+            </div>
+            <div class="dim-item">
+                <span class="dim-label" data-i18n="dimLength">Length (Y)</span>
+                <span class="dim-value" id="dim-y">— mm</span>
+            </div>
+            <div class="dim-item">
+                <span class="dim-label" data-i18n="dimHeight">Height (Z)</span>
+                <span class="dim-value" id="dim-z">— mm</span>
+            </div>
+            <div class="dim-item">
+                <span class="dim-label" data-i18n="dimScale">Scale</span>
+                <span class="dim-value" id="dim-scale">10 mm/u</span>
+            </div>
+        </div>
+    </div>
 
     <!-- HELP MODAL -->
     <div class="modal-overlay" id="helpModal">

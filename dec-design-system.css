@@ -404,9 +404,7 @@ body {
     #mobile-controls-toggle { display: flex; }
 
     #dim-overlay {
-        position: fixed;
         bottom: 5rem;
-        left: 1rem;
         max-width: calc(100vw - 2rem);
     }
 
@@ -461,7 +459,7 @@ body {
 
 /* ---- DIMENSION OVERLAY ---- */
 #dim-overlay {
-    position: absolute;
+    position: fixed;
     bottom: 1rem;
     left: 1rem;
     background: rgba(255, 255, 255, 0.88);
