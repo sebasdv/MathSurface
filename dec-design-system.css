@@ -404,7 +404,8 @@ body {
     #mobile-controls-toggle { display: flex; }
 
     #dim-overlay {
-        bottom: 8rem;
+        position: fixed;
+        bottom: 5rem;
         left: 1rem;
         max-width: calc(100vw - 2rem);
     }
