@@ -404,10 +404,12 @@ body {
     #mobile-controls-toggle { display: flex; }
 
     #dim-overlay {
-        bottom: 5rem;
+        bottom: 8rem;
         left: 1rem;
         max-width: calc(100vw - 2rem);
     }
+
+    .header-formula { display: none; }
 }
 
 /* ---- MODAL ---- */
