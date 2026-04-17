@@ -230,6 +230,15 @@
         <div class="modal">
             <h2 class="modal-title">MathSurface</h2>
             <div class="modal-content">
+                <p data-i18n="helpDesc">Interactive 3D math surface generator for 3D printing. Visualize and export z = f(x, y) equations as print-ready STL files.</p>
+                <h3 data-i18n="helpHowTitle">How to use</h3>
+                <ol data-i18n-list="helpSteps">
+                    <li data-i18n="helpStep1">Enter your equation in the z = f(x, y) field.</li>
+                    <li data-i18n="helpStep2">Click <strong>Generate</strong> or pick a preset example.</li>
+                    <li data-i18n="helpStep3">Drag to rotate, scroll to zoom.</li>
+                    <li data-i18n="helpStep4">Adjust sliders to tune parameters in real time.</li>
+                    <li data-i18n="helpStep5">Click <strong>Export STL</strong> to download for 3D printing.</li>
+                </ol>
                 <h3 data-i18n="helpFunctions">Available Functions</h3>
                 <p><code>sin</code> <code>cos</code> <code>tan</code> <code>exp</code> <code>log</code> <code>sqrt</code> <code>abs</code></p>
                 <h3 data-i18n="helpConstants">Constants</h3>
@@ -819,6 +828,13 @@
                 dimHeight:        'Height (Z)',
                 dimScale:         'Scale',
                 help:             'Help',
+                helpDesc:         'Interactive 3D math surface generator for 3D printing. Visualize and export z = f(x, y) equations as print-ready STL files.',
+                helpHowTitle:     'How to use',
+                helpStep1:        'Enter your equation in the z = f(x, y) field.',
+                helpStep2:        'Click Generate or pick a preset example.',
+                helpStep3:        'Drag to rotate, scroll to zoom.',
+                helpStep4:        'Adjust sliders to tune parameters in real time.',
+                helpStep5:        'Click Export STL to download for 3D printing.',
                 helpFunctions:    'Available Functions',
                 helpConstants:    'Constants',
                 helpVariables:    'Variables',
@@ -853,6 +869,13 @@
                 dimHeight:        'Alto (Z)',
                 dimScale:         'Escala',
                 help:             'Ayuda',
+                helpDesc:         'Generador interactivo de superficies matemáticas 3D para impresión 3D. Visualiza y exporta funciones z = f(x, y) como archivos STL listos para imprimir.',
+                helpHowTitle:     'Cómo usar',
+                helpStep1:        'Escribe tu ecuación en el campo z = f(x, y).',
+                helpStep2:        'Haz clic en Generar o selecciona un ejemplo predefinido.',
+                helpStep3:        'Arrastra para rotar, scroll para hacer zoom.',
+                helpStep4:        'Ajusta los sliders para modificar parámetros en tiempo real.',
+                helpStep5:        'Haz clic en Exportar STL para descargar e imprimir en 3D.',
                 helpFunctions:    'Funciones disponibles',
                 helpConstants:    'Constantes',
                 helpVariables:    'Variables',
@@ -869,7 +892,7 @@
             const t = translations[lang];
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
-                if (t[key] !== undefined) el.textContent = t[key];
+                if (t[key] !== undefined) el.innerHTML = t[key];
             });
             document.getElementById('lang-toggle').textContent = lang === 'en' ? 'ES' : 'EN';
         }
