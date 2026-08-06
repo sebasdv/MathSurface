@@ -3,6 +3,7 @@ DECDESIGNSYSTEM/
 
 # Editor config
 .vscode/
+.claude/
 
 # OS files
 .DS_Store

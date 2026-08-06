@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,6 +27,7 @@
             </div>
             <div style="display:flex; align-items:center; gap:0.75rem;">
                 <span class="font-mono header-formula" style="font-size:0.65rem; color:var(--dec-text-muted);">z = f(x, y)</span>
+                <button class="btn btn-ghost btn-icon" id="rotate-toggle" onclick="toggleAutoRotate()" aria-pressed="false" data-i18n-title="pauseRotation" title="Pause rotation">⏸</button>
                 <button class="btn btn-ghost" id="lang-toggle" style="padding:0.4rem 0.9rem; font-size:0.78rem;" onclick="toggleLang()">ES</button>
                 <button class="btn btn-ghost" style="padding:0.4rem 0.9rem; font-size:0.78rem;" onclick="openHelp()" data-i18n="help">Help</button>
             </div>
@@ -188,7 +189,10 @@
                                 </div>
                                 <div class="action-row">
                                     <button class="btn btn-primary" id="exportSTL" data-i18n="exportSTL">↓ Export STL</button>
-                                    <button class="btn btn-ghost" onclick="toggleWireframe()" data-i18n="wireframe">⬡ Wireframe</button>
+                                    <button class="btn btn-ghost" id="exportPNG" data-i18n="exportPNG">↓ Export PNG</button>
+                                </div>
+                                <div class="action-row">
+                                    <button class="btn btn-ghost" style="flex:1;" onclick="toggleWireframe()" data-i18n="wireframe">⬡ Wireframe</button>
                                 </div>
                             </div>
                         </div>
@@ -232,7 +236,7 @@
             <div class="modal-content">
                 <p data-i18n="helpDesc">Interactive 3D math surface generator for 3D printing. Visualize and export z = f(x, y) equations as print-ready STL files.</p>
                 <h3 data-i18n="helpHowTitle">How to use</h3>
-                <ol data-i18n-list="helpSteps">
+                <ol>
                     <li data-i18n="helpStep1">Enter your equation in the z = f(x, y) field.</li>
                     <li data-i18n="helpStep2">Click <strong>Generate</strong> or pick a preset example.</li>
                     <li data-i18n="helpStep3">Drag to rotate, scroll to zoom.</li>
@@ -260,33 +264,68 @@
         let gridGroup = null;   // grupo de la grilla, se recrea al cambiar range/mmPerUnit
         let currentEquation = "a1*x^3 + a2*y^3 + a3*x^2 + a4*y^2 + a5*x^2*y^2";
         let showWireframe = true;
+        let autoRotate = true;
         let mmPerUnit = 10;     // 1 unidad Three.js = 10 mm por defecto
+
+        const DEFAULT_CAMERA_DISTANCE = Math.sqrt(3) * 8;
+        const MIN_CAMERA_DISTANCE = 2;
+        const MAX_CAMERA_DISTANCE = 50;
+
         let parameters = {
             A: 2.0, f: 2.0, phi: 0.0,
             a1: -0.25, a2: -0.25, a3: 0.5, a4: 0.5, a5: -0.25
         };
         let controls = {
-            isMouseDown: false,
-            mouseX: 0, mouseY: 0,
-            rotationX: 0.3, rotationY: 0.5
+            isDragging: false,
+            lastX: 0, lastY: 0,
+            rotationX: 0.3, rotationY: 0.5,
+            distance: DEFAULT_CAMERA_DISTANCE,
+            pinchSpread: 0
         };
+
+        // Releases the GPU buffers behind an object tree. Three.js `remove()` only
+        // detaches from the scene graph, so without this every rebuild leaked a
+        // geometry, a material and (for the mm labels) a canvas texture.
+        function disposeObject3D(root) {
+            root.traverse(node => {
+                // Sprites share one module-level geometry — disposing it would
+                // pull the buffer out from under every other sprite.
+                if (node.geometry && !node.isSprite) node.geometry.dispose();
+                const materials = Array.isArray(node.material)
+                    ? node.material
+                    : node.material ? [node.material] : [];
+                for (const material of materials) {
+                    if (material.map) material.map.dispose();
+                    material.dispose();
+                }
+            });
+        }
 
         // Initialize Three.js scene
         function init() {
             const container = document.getElementById('canvas-container');
 
+            if (typeof THREE === 'undefined' || typeof math === 'undefined') {
+                showFatalError('errLibs');
+                return;
+            }
+
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0xF0F2F5);
 
             camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
-            camera.position.set(8, 8, 8);
-            camera.lookAt(0, 0, 0);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            try {
+                renderer = new THREE.WebGLRenderer({ antialias: true });
+            } catch (e) {
+                showFatalError('errWebgl');
+                return;
+            }
             renderer.setSize(container.clientWidth, container.clientHeight);
             renderer.shadowMap.enabled = true;
             container.appendChild(renderer.domElement);
 
+            updateCameraPosition();
             addLights();
             addEventListeners();
             animate();
@@ -296,6 +335,14 @@
                 buildGrid();
                 generateSurface();
             }, 100);
+        }
+
+        function showFatalError(key) {
+            const container = document.getElementById('canvas-container');
+            const box = document.createElement('div');
+            box.className = 'canvas-error';
+            box.textContent = tr(key);
+            container.appendChild(box);
         }
 
         function addLights() {
@@ -312,64 +359,87 @@
             scene.add(pointLight);
         }
 
+        const MINOR_STEP_MM = 10;                                  // a grid line every 10 mm
+        const LABEL_STEPS_MM = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000];
+
+        // Coarsest round step that still puts a handful of labels across the
+        // model. A fixed 50 mm left the default 80 mm view with no labels at all
+        // and a 1000 mm view with twenty.
+        function pickLabelStepMm(spanMm) {
+            for (const step of LABEL_STEPS_MM) {
+                if (spanMm / step <= 8) return step;
+            }
+            return LABEL_STEPS_MM[LABEL_STEPS_MM.length - 1];
+        }
+
         // Builds the reference grid + axes. Called after init and whenever range/mmPerUnit changes.
         function buildGrid() {
-            if (gridGroup) scene.remove(gridGroup);
+            if (gridGroup) {
+                scene.remove(gridGroup);
+                disposeObject3D(gridGroup);
+            }
             gridGroup = new THREE.Group();
 
             const range = parseInt(document.getElementById('range').value);
-            const totalMm = range * 2 * mmPerUnit;        // total span in mm (each axis)
-            const minorStepMm = 10;                       // thin line every 10 mm
-            const majorStepMm = 50;                       // thick line every 50 mm
-            const minorStep = minorStepMm / mmPerUnit;    // in Three.js units
-            const majorStep = majorStepMm / mmPerUnit;
+            const minorStep = MINOR_STEP_MM / mmPerUnit;   // in Three.js units
+            const labelStepMm = pickLabelStepMm(range * 2 * mmPerUnit);
+            const zFloor = -0.02;                          // sit just below the z = 0 plane
+            const EPS = 1e-6;
 
-            const matMinor = new THREE.LineBasicMaterial({ color: 0xD1D5DB, transparent: true, opacity: 0.6 });
-            const matMajor = new THREE.LineBasicMaterial({ color: 0x9CA3AF, transparent: true, opacity: 0.9 });
+            const minorCoords = [];
+            const majorCoords = [];
 
-            // Ground plane at z = 0 (slight offset below)
-            const zFloor = -0.02;
+            // Walk whole multiples of the step instead of offsets from -range, so
+            // that lines land on round millimetre values and each label sits on
+            // the line it names.
+            const firstIndex = Math.ceil((-range - EPS) / minorStep);
+            for (let n = firstIndex; n * minorStep <= range + EPS; n++) {
+                const v = n * minorStep;
+                const mm = n * MINOR_STEP_MM;              // exact: v * mmPerUnit
+                const onLabelStep = mm % labelStepMm === 0;
 
-            function addLine(x1, y1, x2, y2, mat) {
-                const geo = new THREE.BufferGeometry().setFromPoints([
-                    new THREE.Vector3(x1, zFloor, y1),
-                    new THREE.Vector3(x2, zFloor, y2)
-                ]);
-                gridGroup.add(new THREE.Line(geo, mat));
+                // Only draw a heavier line when it actually marks a coarser step
+                // than the minor grid, otherwise every line would look major.
+                const coords = (onLabelStep && labelStepMm > MINOR_STEP_MM) ? majorCoords : minorCoords;
+                coords.push(v, zFloor, -range, v, zFloor, range);   // parallel to Y
+                coords.push(-range, zFloor, v, range, zFloor, v);   // parallel to X
+
+                if (onLabelStep && mm !== 0) {
+                    addMmLabel(`${mm}`, v, 0, zFloor - 0.05);       // along X axis
+                    addMmLabel(`${mm}`, 0, v, zFloor - 0.05);       // along Y axis
+                }
             }
 
-            // Draw grid lines along X and Y
-            for (let v = -range; v <= range; v += minorStep) {
-                const isMajor = Math.abs(Math.round(v / majorStep) * majorStep - v) < 0.001;
-                const mat = isMajor ? matMajor : matMinor;
-                addLine(v, -range, v, range, mat);   // vertical lines (parallel to Y)
-                addLine(-range, v, range, v, mat);   // horizontal lines (parallel to X)
-            }
+            // One LineSegments per weight instead of one Line object per segment:
+            // two draw calls rather than a couple of hundred.
+            addLineSegments(minorCoords, 0xD1D5DB, 0.6);
+            addLineSegments(majorCoords, 0x9CA3AF, 0.9);
 
-            // Axes (X = red, Y = green, Z = blue) — thin cylinders
+            // Axes coloured in the *model's* frame, which is Z-up: Three.js Y is
+            // the model's Z (height) and Three.js Z is the model's Y (depth).
             const axisLen = range * 1.2;
-            function addAxis(dir, color) {
+            function addAxis(axis, color) {
                 const geo = new THREE.CylinderGeometry(0.015, 0.015, axisLen * 2);
                 const mat = new THREE.MeshBasicMaterial({ color });
                 const mesh = new THREE.Mesh(geo, mat);
-                if (dir === 'x') mesh.rotation.z = Math.PI / 2;
-                if (dir === 'z') mesh.rotation.x = Math.PI / 2;
+                if (axis === 'x') mesh.rotation.z = Math.PI / 2;   // along Three.js X
+                if (axis === 'y') mesh.rotation.x = Math.PI / 2;   // along Three.js Z
+                // 'z' keeps the cylinder's default Y orientation = model height
                 gridGroup.add(mesh);
             }
-            addAxis('x', 0xEF4444);   // red
-            addAxis('y', 0x22C55E);   // green
-            addAxis('z', 0x3B82F6);   // blue
-
-            // Mm labels at major grid intersections using canvas sprites
-            const labelStepUnits = majorStep;
-            for (let v = -range; v <= range; v += labelStepUnits) {
-                const mm = Math.round(v * mmPerUnit);
-                if (mm === 0) continue;
-                addMmLabel(`${mm}`, v, 0, zFloor - 0.05);   // along X axis
-                addMmLabel(`${mm}`, 0, v, zFloor - 0.05);   // along Y axis
-            }
+            addAxis('x', 0xEF4444);   // red   — Width (X)
+            addAxis('y', 0x22C55E);   // green — Length (Y)
+            addAxis('z', 0x3B82F6);   // blue  — Height (Z)
 
             scene.add(gridGroup);
+        }
+
+        function addLineSegments(coords, color, opacity) {
+            if (coords.length === 0) return;
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(coords, 3));
+            const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity });
+            gridGroup.add(new THREE.LineSegments(geo, mat));
         }
 
         function addMmLabel(text, x, y, zPos) {
@@ -391,9 +461,6 @@
         }
 
         function updateDimensions() {
-            const range = parseInt(document.getElementById('range').value);
-            const zScale = parseFloat(document.getElementById('zScale').value);
-
             if (!surface) {
                 document.getElementById('dim-x').textContent = '— mm';
                 document.getElementById('dim-y').textContent = '— mm';
@@ -415,12 +482,41 @@
             document.getElementById('dim-scale').textContent = mmPerUnit + ' mm/u';
         }
 
+        // --- Coalesced rebuilds ------------------------------------------------
+        // Dragging a slider fires `input` dozens of times per second, and a full
+        // rebuild at resolution 100 costs far more than the gap between events —
+        // firing one per event queued work faster than it could be retired. Keep
+        // at most one rebuild pending and space rebuilds by the cost of the last
+        // one, so cheap surfaces stay at 60 fps and heavy ones self-throttle.
+        let rebuildTimer = null;
+        let pendingGrid = false;
+        let pendingSurface = false;
+        let lastBuildMs = 16;
+
+        function scheduleRebuild({ grid = false, surface: wantSurface = false } = {}) {
+            pendingGrid = pendingGrid || grid;
+            pendingSurface = pendingSurface || wantSurface;
+            if (rebuildTimer !== null) return;
+
+            const delay = Math.min(Math.max(lastBuildMs, 16), 250);
+            rebuildTimer = setTimeout(() => {
+                rebuildTimer = null;
+                const started = performance.now();
+                if (pendingGrid) { pendingGrid = false; buildGrid(); }
+                if (pendingSurface) { pendingSurface = false; generateSurface(); }
+                lastBuildMs = performance.now() - started;
+            }, delay);
+        }
+
         function addEventListeners() {
             const canvas = renderer.domElement;
-            canvas.addEventListener('mousedown', onMouseDown);
-            canvas.addEventListener('mousemove', onMouseMove);
-            canvas.addEventListener('mouseup', onMouseUp);
-            canvas.addEventListener('wheel', onWheel);
+            // Pointer events cover mouse, pen and touch in one path, and capture
+            // keeps the drag alive when the cursor leaves the canvas.
+            canvas.addEventListener('pointerdown', onPointerDown);
+            canvas.addEventListener('pointermove', onPointerMove);
+            canvas.addEventListener('pointerup', onPointerEnd);
+            canvas.addEventListener('pointercancel', onPointerEnd);
+            canvas.addEventListener('wheel', onWheel, { passive: false });
 
             window.addEventListener('resize', onWindowResize);
 
@@ -441,16 +537,15 @@
                         }
                         if (param === 'mmPerUnit') {
                             mmPerUnit = value;
-                            buildGrid();
+                            scheduleRebuild({ grid: true });
                             updateDimensions();
                         } else if (['A', 'f', 'phi', 'a1', 'a2', 'a3', 'a4', 'a5'].includes(param)) {
                             parameters[param] = value;
                             if (document.getElementById('auto-update').checked) {
-                                generateSurface();
+                                scheduleRebuild({ surface: true });
                             }
                         } else {
-                            if (param === 'range') buildGrid();
-                            generateSurface();
+                            scheduleRebuild({ grid: param === 'range', surface: true });
                         }
                     });
                 }
@@ -461,6 +556,7 @@
             });
 
             document.getElementById('exportSTL').addEventListener('click', exportSTL);
+            document.getElementById('exportPNG').addEventListener('click', exportPNG);
         }
 
         function updateAllParameterValues() {
@@ -476,29 +572,61 @@
             });
         }
 
+        // Last status shown under the equation field, kept so the language
+        // toggle can redraw it in the new language.
+        let lastStatus = null;
+
+        function setStatus(cls, key, detail) {
+            lastStatus = { cls, key, detail };
+            renderStatus();
+        }
+
+        function renderStatus() {
+            const el = document.getElementById('equation-status');
+            el.textContent = '';
+            if (!lastStatus) return;
+            const span = document.createElement('span');
+            span.className = lastStatus.cls;
+            // textContent, not innerHTML: `detail` is a parser message derived
+            // from whatever the user typed.
+            span.textContent = tr(lastStatus.key) + (lastStatus.detail ? ' — ' + lastStatus.detail : '');
+            el.appendChild(span);
+        }
+
         function generateSurface() {
-            const equationInput = document.getElementById('equation');
-            const equationText = equationInput.value.trim();
-            const statusDiv = document.getElementById('equation-status');
+            const equationText = document.getElementById('equation').value.trim();
 
             if (!equationText) {
-                statusDiv.innerHTML = '<span class="status-err">✗ Please enter an equation</span>';
+                setStatus('status-err', 'statusEmpty');
                 return;
             }
 
+            let compiled;
             try {
-                const testExpr = math.parse(equationText);
-                const compiled = testExpr.compile();
-
-                const testScope = { x: 1, y: 1, ...parameters };
-                compiled.evaluate(testScope);
-
-                statusDiv.innerHTML = '<span class="status-ok">✓ Valid equation</span>';
-                currentEquation = equationText;
-
-                setTimeout(() => createSurface(compiled), 50);
+                compiled = math.parse(equationText).compile();
+                compiled.evaluate({ x: 1, y: 1, ...parameters });
             } catch (error) {
-                statusDiv.innerHTML = `<span class="status-err">✗ ${error.message}</span>`;
+                setStatus('status-err', 'statusInvalid', error.message);
+                return;
+            }
+
+            setStatus('status-ok', 'statusValid');
+            currentEquation = equationText;
+            createSurface(compiled);
+        }
+
+        // Detaches the current surface and frees its GPU buffers.
+        function clearSurface() {
+            if (wireframe) {
+                scene.remove(wireframe);
+                wireframe.material.dispose();
+                wireframe = null;
+            }
+            if (surface) {
+                scene.remove(surface);
+                surface.material.dispose();
+                surface.geometry.dispose();   // shared with the wireframe, so freed once
+                surface = null;
             }
         }
 
@@ -509,8 +637,7 @@
             const zScale = parseFloat(document.getElementById('zScale').value);
             const opacity = parseFloat(document.getElementById('opacity').value);
 
-            if (surface) scene.remove(surface);
-            if (wireframe) scene.remove(wireframe);
+            clearSurface();
 
             const geometry = createSolidGeometry(resolution, range, thickness, zScale, compiledEquation);
 
@@ -534,7 +661,9 @@
                 opacity: 0.3
             });
 
-            wireframe = new THREE.Mesh(geometry.clone(), wireframeMaterial);
+            // Shares the solid's geometry — cloning it doubled memory and build
+            // time to draw exactly the same triangles.
+            wireframe = new THREE.Mesh(geometry, wireframeMaterial);
             wireframe.visible = showWireframe;
             scene.add(wireframe);
 
@@ -546,9 +675,15 @@
             const vertices = [];
             const indices = [];
 
+            // One scope object reused across all (resolution+1)² samples instead
+            // of spreading `parameters` into a fresh object per vertex.
+            const scope = { x: 0, y: 0, ...parameters };
+
             function calculateZ(x, y) {
+                scope.x = x;
+                scope.y = y;
                 try {
-                    const result = compiledEquation.evaluate({ x, y, ...parameters });
+                    const result = compiledEquation.evaluate(scope);
                     return (typeof result === 'number' && isFinite(result)) ? result * zScale : 0;
                 } catch (e) {
                     return 0;
@@ -658,7 +793,7 @@
         function resetView() {
             controls.rotationX = 0.3;
             controls.rotationY = 0.5;
-            camera.position.set(8, 8, 8);
+            controls.distance = DEFAULT_CAMERA_DISTANCE;
             updateCameraPosition();
         }
 
@@ -667,41 +802,88 @@
             if (wireframe) wireframe.visible = showWireframe;
         }
 
-        function onMouseDown(event) {
-            controls.isMouseDown = true;
-            controls.mouseX = event.clientX;
-            controls.mouseY = event.clientY;
+        function toggleAutoRotate() {
+            autoRotate = !autoRotate;
+            updateRotateButton();
         }
 
-        function onMouseMove(event) {
-            if (!controls.isMouseDown) return;
-            const deltaX = event.clientX - controls.mouseX;
-            const deltaY = event.clientY - controls.mouseY;
-            controls.rotationY += deltaX * 0.01;
-            controls.rotationX += deltaY * 0.01;
-            controls.rotationX = Math.max(-Math.PI/2, Math.min(Math.PI/2, controls.rotationX));
-            updateCameraPosition();
-            controls.mouseX = event.clientX;
-            controls.mouseY = event.clientY;
+        function updateRotateButton() {
+            const btn = document.getElementById('rotate-toggle');
+            btn.textContent = autoRotate ? '⏸' : '▶';
+            btn.title = tr(autoRotate ? 'pauseRotation' : 'resumeRotation');
+            btn.setAttribute('aria-pressed', String(!autoRotate));
         }
 
-        function onMouseUp() {
-            controls.isMouseDown = false;
-        }
+        // --- Pointer input (mouse, pen and touch) ------------------------------
+        const activePointers = new Map();
 
-        function onWheel(event) {
-            const distance = camera.position.length();
-            const newDistance = distance + event.deltaY * 0.01;
-            if (newDistance > 2 && newDistance < 50) {
-                camera.position.multiplyScalar(newDistance / distance);
+        function onPointerDown(event) {
+            renderer.domElement.setPointerCapture(event.pointerId);
+            activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+            if (activePointers.size === 1) {
+                controls.isDragging = true;
+                controls.lastX = event.clientX;
+                controls.lastY = event.clientY;
+            } else if (activePointers.size === 2) {
+                controls.isDragging = false;   // a second finger means pinch-zoom
+                controls.pinchSpread = pointerSpread();
             }
         }
 
+        function onPointerMove(event) {
+            if (!activePointers.has(event.pointerId)) return;
+            activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+
+            if (activePointers.size === 2) {
+                const spread = pointerSpread();
+                if (controls.pinchSpread > 0 && spread > 0) {
+                    zoomBy(controls.pinchSpread / spread);
+                }
+                controls.pinchSpread = spread;
+                return;
+            }
+
+            if (!controls.isDragging) return;
+            controls.rotationY += (event.clientX - controls.lastX) * 0.01;
+            controls.rotationX += (event.clientY - controls.lastY) * 0.01;
+            controls.rotationX = Math.max(-Math.PI/2, Math.min(Math.PI/2, controls.rotationX));
+            controls.lastX = event.clientX;
+            controls.lastY = event.clientY;
+            updateCameraPosition();
+        }
+
+        function onPointerEnd(event) {
+            activePointers.delete(event.pointerId);
+            if (activePointers.size < 2) controls.pinchSpread = 0;
+            if (activePointers.size === 0) controls.isDragging = false;
+        }
+
+        function pointerSpread() {
+            const [a, b] = [...activePointers.values()];
+            return Math.hypot(a.x - b.x, a.y - b.y);
+        }
+
+        function onWheel(event) {
+            event.preventDefault();
+            zoomBy(1 + event.deltaY * 0.001);
+        }
+
+        function zoomBy(factor) {
+            controls.distance = Math.max(
+                MIN_CAMERA_DISTANCE,
+                Math.min(MAX_CAMERA_DISTANCE, controls.distance * factor)
+            );
+            updateCameraPosition();
+        }
+
+        // Camera distance is explicit state rather than being read back from the
+        // position, so Reset can restore the zoom as well as the angle.
         function updateCameraPosition() {
-            const distance = camera.position.length();
-            camera.position.x = distance * Math.cos(controls.rotationX) * Math.cos(controls.rotationY);
-            camera.position.y = distance * Math.sin(controls.rotationX);
-            camera.position.z = distance * Math.cos(controls.rotationX) * Math.sin(controls.rotationY);
+            const d = controls.distance;
+            camera.position.x = d * Math.cos(controls.rotationX) * Math.cos(controls.rotationY);
+            camera.position.y = d * Math.sin(controls.rotationX);
+            camera.position.z = d * Math.cos(controls.rotationX) * Math.sin(controls.rotationY);
             camera.lookAt(0, 0, 0);
         }
 
@@ -714,16 +896,58 @@
 
         function animate() {
             requestAnimationFrame(animate);
-            if (!controls.isMouseDown) {
+            if (autoRotate && !controls.isDragging) {
                 controls.rotationY += 0.005;
                 updateCameraPosition();
             }
             renderer.render(scene, camera);
         }
 
+        function downloadBlob(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            // Revoking synchronously can cancel the download in Firefox/Safari.
+            setTimeout(() => URL.revokeObjectURL(url), 0);
+        }
+
+        // Renders one off-screen frame at SCALE× the on-screen size and saves it.
+        // The renderer has no preserveDrawingBuffer, so the read has to happen in
+        // the same task as the render — toBlob snapshots the bitmap synchronously
+        // and only the PNG encoding is deferred, so this is safe.
+        function exportPNG() {
+            if (!surface) {
+                alert(tr('needSurface'));
+                return;
+            }
+
+            const canvas = renderer.domElement;
+            const width = canvas.clientWidth;
+            const height = canvas.clientHeight;
+            const SCALE = 2;
+
+            // Encoding a 2× frame takes a second or two; the button says so.
+            const btn = document.getElementById('exportPNG');
+            btn.disabled = true;
+            btn.textContent = tr('exporting');
+
+            renderer.setSize(width * SCALE, height * SCALE, false);
+            renderer.render(scene, camera);
+            canvas.toBlob(blob => {
+                if (blob) downloadBlob(blob, 'mathsurface.png');
+                btn.disabled = false;
+                btn.textContent = tr('exportPNG');
+            }, 'image/png');
+            renderer.setSize(width, height);
+        }
+
         function exportSTL() {
             if (!surface) {
-                alert('Generate a surface first');
+                alert(tr('needSurface'));
                 return;
             }
 
@@ -743,7 +967,10 @@
                 };
             }
 
-            let stlString = 'solid equation\n';
+            // Collected as chunks and joined once: at resolution 100 this is
+            // ~41k facets, and repeated concatenation of a multi-MB string is
+            // needlessly slow.
+            const parts = ['solid equation\n'];
 
             for (let i = 0; i < idxArr.length; i += 3) {
                 const v1 = toStlVertex(idxArr[i]);
@@ -759,23 +986,19 @@
                 const len = Math.sqrt(nx*nx + ny*ny + nz*nz) || 1;
                 nx /= len; ny /= len; nz /= len;
 
-                stlString += `  facet normal ${nx.toFixed(6)} ${ny.toFixed(6)} ${nz.toFixed(6)}\n`;
-                stlString += '    outer loop\n';
-                stlString += `      vertex ${v1.x.toFixed(6)} ${v1.y.toFixed(6)} ${v1.z.toFixed(6)}\n`;
-                stlString += `      vertex ${v2.x.toFixed(6)} ${v2.y.toFixed(6)} ${v2.z.toFixed(6)}\n`;
-                stlString += `      vertex ${v3.x.toFixed(6)} ${v3.y.toFixed(6)} ${v3.z.toFixed(6)}\n`;
-                stlString += '    endloop\n  endfacet\n';
+                parts.push(
+                    `  facet normal ${nx.toFixed(6)} ${ny.toFixed(6)} ${nz.toFixed(6)}\n`,
+                    '    outer loop\n',
+                    `      vertex ${v1.x.toFixed(6)} ${v1.y.toFixed(6)} ${v1.z.toFixed(6)}\n`,
+                    `      vertex ${v2.x.toFixed(6)} ${v2.y.toFixed(6)} ${v2.z.toFixed(6)}\n`,
+                    `      vertex ${v3.x.toFixed(6)} ${v3.y.toFixed(6)} ${v3.z.toFixed(6)}\n`,
+                    '    endloop\n  endfacet\n'
+                );
             }
 
-            stlString += 'endsolid equation';
+            parts.push('endsolid equation');
 
-            const blob = new Blob([stlString], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'equation_3d.stl';
-            a.click();
-            URL.revokeObjectURL(url);
+            downloadBlob(new Blob([parts.join('')], { type: 'model/stl' }), 'equation_3d.stl');
         }
 
         // Accordion toggle
@@ -821,7 +1044,17 @@
                 opacity:          'Opacity',
                 mmPerUnit:        'mm / unit',
                 exportSTL:        '↓ Export STL',
+                exportPNG:        '↓ Export PNG',
+                exporting:        '… Exporting',
                 wireframe:        '⬡ Wireframe',
+                pauseRotation:    'Pause rotation',
+                resumeRotation:   'Resume rotation',
+                statusValid:      '✓ Valid equation',
+                statusEmpty:      '✗ Please enter an equation',
+                statusInvalid:    '✗ Invalid equation',
+                needSurface:      'Generate a surface first.',
+                errWebgl:         'WebGL is not available in this browser, so the 3D view cannot be shown.',
+                errLibs:          'Three.js or Math.js failed to load. Check your connection and reload.',
                 modelDimensions:  'Model Dimensions',
                 dimWidth:         'Width (X)',
                 dimLength:        'Length (Y)',
@@ -831,10 +1064,10 @@
                 helpDesc:         'Interactive 3D math surface generator for 3D printing. Visualize and export z = f(x, y) equations as print-ready STL files.',
                 helpHowTitle:     'How to use',
                 helpStep1:        'Enter your equation in the z = f(x, y) field.',
-                helpStep2:        'Click Generate or pick a preset example.',
-                helpStep3:        'Drag to rotate, scroll to zoom.',
+                helpStep2:        'Click <strong>Generate</strong> or pick a preset example.',
+                helpStep3:        'Drag to rotate, scroll or pinch to zoom.',
                 helpStep4:        'Adjust sliders to tune parameters in real time.',
-                helpStep5:        'Click Export STL to download for 3D printing.',
+                helpStep5:        'Click <strong>Export STL</strong> to download for 3D printing, or <strong>Export PNG</strong> for an image.',
                 helpFunctions:    'Available Functions',
                 helpConstants:    'Constants',
                 helpVariables:    'Variables',
@@ -862,7 +1095,17 @@
                 opacity:          'Opacidad',
                 mmPerUnit:        'mm / unidad',
                 exportSTL:        '↓ Exportar STL',
+                exportPNG:        '↓ Exportar PNG',
+                exporting:        '… Exportando',
                 wireframe:        '⬡ Wireframe',
+                pauseRotation:    'Pausar rotación',
+                resumeRotation:   'Reanudar rotación',
+                statusValid:      '✓ Ecuación válida',
+                statusEmpty:      '✗ Escribe una ecuación',
+                statusInvalid:    '✗ Ecuación inválida',
+                needSurface:      'Genera una superficie primero.',
+                errWebgl:         'WebGL no está disponible en este navegador, así que no se puede mostrar la vista 3D.',
+                errLibs:          'No se pudieron cargar Three.js o Math.js. Revisa tu conexión y recarga la página.',
                 modelDimensions:  'Dimensiones del modelo',
                 dimWidth:         'Ancho (X)',
                 dimLength:        'Largo (Y)',
@@ -872,10 +1115,10 @@
                 helpDesc:         'Generador interactivo de superficies matemáticas 3D para impresión 3D. Visualiza y exporta funciones z = f(x, y) como archivos STL listos para imprimir.',
                 helpHowTitle:     'Cómo usar',
                 helpStep1:        'Escribe tu ecuación en el campo z = f(x, y).',
-                helpStep2:        'Haz clic en Generar o selecciona un ejemplo predefinido.',
-                helpStep3:        'Arrastra para rotar, scroll para hacer zoom.',
+                helpStep2:        'Haz clic en <strong>Generar</strong> o selecciona un ejemplo predefinido.',
+                helpStep3:        'Arrastra para rotar, scroll o pellizco para hacer zoom.',
                 helpStep4:        'Ajusta los sliders para modificar parámetros en tiempo real.',
-                helpStep5:        'Haz clic en Exportar STL para descargar e imprimir en 3D.',
+                helpStep5:        'Haz clic en <strong>Exportar STL</strong> para imprimir en 3D, o <strong>Exportar PNG</strong> para una imagen.',
                 helpFunctions:    'Funciones disponibles',
                 helpConstants:    'Constantes',
                 helpVariables:    'Variables',
@@ -886,25 +1129,56 @@
             }
         };
 
+        const LANG_KEY = 'mathsurface-lang';
         let currentLang = 'en';
 
+        function tr(key) {
+            const t = translations[currentLang] || translations.en;
+            return t[key] !== undefined ? t[key] : key;
+        }
+
+        function readLang() {
+            try {
+                const saved = localStorage.getItem(LANG_KEY);
+                if (saved === 'en' || saved === 'es') return saved;
+            } catch (e) {
+                // Storage can be unavailable (file:// origins, private mode).
+            }
+            return (navigator.language || '').toLowerCase().startsWith('es') ? 'es' : 'en';
+        }
+
         function applyLang(lang) {
+            currentLang = lang;
             const t = translations[lang];
+
+            // innerHTML here is author-controlled: a few strings carry <strong>.
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if (t[key] !== undefined) el.innerHTML = t[key];
             });
+            document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                const key = el.getAttribute('data-i18n-title');
+                if (t[key] !== undefined) el.title = t[key];
+            });
+
+            document.documentElement.lang = lang;
             document.getElementById('lang-toggle').textContent = lang === 'en' ? 'ES' : 'EN';
+            updateRotateButton();
+            renderStatus();
         }
 
         function toggleLang() {
-            currentLang = currentLang === 'en' ? 'es' : 'en';
-            applyLang(currentLang);
+            applyLang(currentLang === 'en' ? 'es' : 'en');
+            try {
+                localStorage.setItem(LANG_KEY, currentLang);
+            } catch (e) {
+                // Ignore: the toggle still works for this session.
+            }
         }
 
         // Initialize
+        applyLang(readLang());
         init();
-        applyLang(currentLang);
     </script>
 </body>
 </html>

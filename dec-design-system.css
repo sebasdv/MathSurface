@@ -104,6 +104,25 @@ body {
     overflow: hidden;
 }
 
+/* touch-action: none so drag/pinch reach the pointer handlers instead of
+   being swallowed by the browser's scroll and zoom gestures. */
+#canvas-container canvas {
+    display: block;
+    touch-action: none;
+}
+
+.canvas-error {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--dec-text-muted);
+}
+
 /* ---- SIDEBAR ---- */
 #controls-sidebar {
     width: 380px;
@@ -184,6 +203,12 @@ body {
 
 .btn:active { transform: scale(0.96); }
 
+.btn:disabled {
+    opacity: 0.55;
+    cursor: default;
+    pointer-events: none;
+}
+
 .btn-primary {
     background: var(--dec-blue-primary);
     color: white;
@@ -204,6 +229,17 @@ body {
 }
 
 .btn-ghost:hover { border-color: var(--dec-text-main); }
+
+/* Square icon-only button (header rotation toggle) */
+.btn-icon {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    justify-content: center;
+    font-size: 0.8rem;
+    line-height: 1;
+}
 
 /* ---- ACCORDION (flush) ---- */
 .accordion-flush { border: none; }

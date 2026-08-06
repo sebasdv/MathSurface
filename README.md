@@ -16,9 +16,9 @@ Generador interactivo de superficies matemáticas 3D para impresión 3D. Visuali
    ```
    -0.25*x^3 - 0.25*y^3 + 0.5*x^2 + 0.5*y^2 - 0.25*x^2*y^2
    ```
-3. Haz clic en "Generar Superficie" o selecciona un ejemplo predefinido.
-4. Usa los controles para rotar, hacer zoom y ajustar la visualización.
-5. Exporta la superficie como archivo STL para impresión 3D.
+3. Haz clic en "Generar" o selecciona un ejemplo predefinido.
+4. Arrastra para rotar, scroll o pellizco para hacer zoom. El botón ⏸ del encabezado pausa la rotación automática.
+5. Exporta la superficie como STL para impresión 3D, o como PNG si solo quieres la imagen.
 
 ### Funciones soportadas
 `sin` `cos` `tan` `exp` `log` `sqrt` `abs` y operadores `+ - * / ^`
@@ -35,13 +35,13 @@ Interactive 3D math surface generator for 3D printing. Visualize and export z = 
 
 ### How to use
 1. Open the [live demo](https://sebasdv.github.io/MathSurface/) in your browser.
-2. Enter your equation in the "Ecuación z = f(x, y)" field. Example:
+2. Enter your equation in the "Equation z = f(x, y)" field. Example:
    ```
    -0.25*x^3 - 0.25*y^3 + 0.5*x^2 + 0.5*y^2 - 0.25*x^2*y^2
    ```
-3. Click "Generar Superficie" (Generate Surface) or pick a preset example.
-4. Use the mouse to rotate, zoom, and adjust the visualization.
-5. Export the surface as an STL file for 3D printing.
+3. Click "Generate" or pick a preset example.
+4. Drag to rotate, scroll or pinch to zoom. The ⏸ button in the header pauses the auto-rotation.
+5. Export the surface as an STL file for 3D printing, or as a PNG if you just want the image.
 
 ### Supported functions
 `sin` `cos` `tan` `exp` `log` `sqrt` `abs` and operators `+ - * / ^`
