@@ -46,15 +46,13 @@
                 <!-- Equation input -->
                 <div class="equation-group">
                     <div class="section-label">
-                        <span data-i18n="equation">Equation z = f(x, y)</span>
+                        <span data-i18n="equation">Equations z = f(x, y)</span>
                         <span class="font-mono text-blue">INPUT</span>
                     </div>
-                    <input type="text" id="equation" class="equation-input-full"
-                           value="a1*x^3 + a2*y^3 + a3*x^2 + a4*y^2 + a5*x^2*y^2"
-                           placeholder="e.g., A * sin(f*x + phi)">
-                    <div id="equation-status"></div>
+                    <div id="surface-list"></div>
+                    <button class="btn btn-ghost btn-add" id="add-surface" onclick="addSurface()" data-i18n="addSurface">+ Add surface</button>
                     <div class="button-group">
-                        <button class="btn btn-primary" onclick="generateSurface()" data-i18n="generate">▶ Generate</button>
+                        <button class="btn btn-primary" onclick="regenerateAll()" data-i18n="generate">▶ Generate</button>
                         <button class="btn btn-ghost" onclick="resetView()" data-i18n="reset">↺ Reset</button>
                     </div>
                 </div>
@@ -187,6 +185,13 @@
                                     <input type="range" id="mmPerUnit" min="1" max="50" step="1" value="10">
                                     <span class="param-value" id="mmPerUnit-value">10 mm</span>
                                 </div>
+                                <div class="toggle-row">
+                                    <span data-i18n="showIntersections">Intersection curves</span>
+                                    <label class="toggle-switch-wrap">
+                                        <input type="checkbox" id="show-intersections" checked>
+                                        <span class="toggle-track"></span>
+                                    </label>
+                                </div>
                                 <div class="action-row">
                                     <button class="btn btn-primary" id="exportSTL" data-i18n="exportSTL">↓ Export STL</button>
                                     <button class="btn btn-ghost" id="exportPNG" data-i18n="exportPNG">↓ Export PNG</button>
@@ -239,6 +244,7 @@
                 <ol>
                     <li data-i18n="helpStep1">Enter your equation in the z = f(x, y) field.</li>
                     <li data-i18n="helpStep2">Click <strong>Generate</strong> or pick a preset example.</li>
+                    <li data-i18n="helpStepSurfaces">Use <strong>+ Add surface</strong> for up to four equations at once. Where two of them cross, the intersection curve is drawn automatically. The colour swatch shows or hides a surface.</li>
                     <li data-i18n="helpStep3">Drag to rotate, scroll to zoom.</li>
                     <li data-i18n="helpStep4">Adjust sliders to tune parameters in real time.</li>
                     <li data-i18n="helpStep5">Click <strong>Export STL</strong> to download for 3D printing.</li>
@@ -260,10 +266,28 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
     <script>
-        let scene, camera, renderer, surface, wireframe;
+        let scene, camera, renderer;
         let gridGroup = null;   // grupo de la grilla, se recrea al cambiar range/mmPerUnit
-        let currentEquation = "a1*x^3 + a2*y^3 + a3*x^2 + a4*y^2 + a5*x^2*y^2";
         let showWireframe = true;
+
+        // --- Surfaces ----------------------------------------------------------
+        // All surfaces share the sliders (A, f, phi, a1…a5) on purpose: moving one
+        // slider moves the whole family, which is the point when you are comparing
+        // them. Only the equation, colour and visibility are per-surface.
+        const SURFACE_COLORS = [
+            { solid: 0x009FE3, wire: 0x0077A9, css: '#009FE3' },   // DEC blue
+            { solid: 0xFF671F, wire: 0xD64B00, css: '#FF671F' },   // DEC orange
+            { solid: 0x22C55E, wire: 0x15803D, css: '#22C55E' },   // green
+            { solid: 0xA855F7, wire: 0x7E22CE, css: '#A855F7' }    // purple
+        ];
+        const MAX_SURFACES = SURFACE_COLORS.length;
+        const INTERSECTION_COLOR = 0x111827;
+
+        // { id, equation, colorIndex, visible, mesh, wireMesh, gridZ, error }
+        let surfaces = [];
+        let nextSurfaceId = 1;
+        let activeSurfaceId = null;     // last row the user touched; target for examples
+        let intersectionLines = null;   // THREE.LineSegments, rebuilt with the surfaces
         let autoRotate = true;
         let mmPerUnit = 10;     // 1 unidad Three.js = 10 mm por defecto
 
@@ -333,7 +357,7 @@
             setTimeout(() => {
                 updateAllParameterValues();
                 buildGrid();
-                generateSurface();
+                addSurface('a1*x^3 + a2*y^3 + a3*x^2 + a4*y^2 + a5*x^2*y^2');
             }, 100);
         }
 
@@ -460,26 +484,29 @@
             gridGroup.add(sprite);
         }
 
+        // Bounding box of everything that will be exported, i.e. the union over
+        // the visible surfaces.
         function updateDimensions() {
-            if (!surface) {
+            const box = new THREE.Box3();
+            let empty = true;
+            for (const s of visibleSurfaces()) {
+                s.mesh.geometry.computeBoundingBox();
+                box.union(s.mesh.geometry.boundingBox);
+                empty = false;
+            }
+
+            document.getElementById('dim-scale').textContent = mmPerUnit + ' mm/u';
+            if (empty) {
                 document.getElementById('dim-x').textContent = '— mm';
                 document.getElementById('dim-y').textContent = '— mm';
                 document.getElementById('dim-z').textContent = '— mm';
                 return;
             }
 
-            // Bounding box of current surface
-            surface.geometry.computeBoundingBox();
-            const box = surface.geometry.boundingBox;
-
-            const xMm = Math.round((box.max.x - box.min.x) * mmPerUnit);
-            const yMm = Math.round((box.max.z - box.min.z) * mmPerUnit);   // Three.js Y is depth (we use Z as depth in world)
-            const zMm = Math.round((box.max.y - box.min.y) * mmPerUnit);
-
-            document.getElementById('dim-x').textContent = xMm + ' mm';
-            document.getElementById('dim-y').textContent = yMm + ' mm';
-            document.getElementById('dim-z').textContent = zMm + ' mm';
-            document.getElementById('dim-scale').textContent = mmPerUnit + ' mm/u';
+            const mm = v => Math.round(v * mmPerUnit) + ' mm';
+            document.getElementById('dim-x').textContent = mm(box.max.x - box.min.x);
+            document.getElementById('dim-y').textContent = mm(box.max.z - box.min.z);   // Three.js Z is depth
+            document.getElementById('dim-z').textContent = mm(box.max.y - box.min.y);   // Three.js Y is height
         }
 
         // --- Coalesced rebuilds ------------------------------------------------
@@ -493,6 +520,20 @@
         let pendingSurface = false;
         let lastBuildMs = 16;
 
+        // Equation text gets a plain trailing debounce instead. A slider wants
+        // continuous feedback, but a half-typed expression is a parse error, so
+        // rebuilding per keystroke just flashes red while you type `sin(`.
+        const EQUATION_DEBOUNCE_MS = 350;
+        let equationTimer = null;
+
+        function scheduleEquationRebuild() {
+            clearTimeout(equationTimer);
+            equationTimer = setTimeout(() => {
+                equationTimer = null;
+                regenerateAll();
+            }, EQUATION_DEBOUNCE_MS);
+        }
+
         function scheduleRebuild({ grid = false, surface: wantSurface = false } = {}) {
             pendingGrid = pendingGrid || grid;
             pendingSurface = pendingSurface || wantSurface;
@@ -503,7 +544,7 @@
                 rebuildTimer = null;
                 const started = performance.now();
                 if (pendingGrid) { pendingGrid = false; buildGrid(); }
-                if (pendingSurface) { pendingSurface = false; generateSurface(); }
+                if (pendingSurface) { pendingSurface = false; regenerateAll(); }
                 lastBuildMs = performance.now() - started;
             }, delay);
         }
@@ -551,8 +592,11 @@
                 }
             });
 
-            document.getElementById('equation').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') generateSurface();
+            document.getElementById('show-intersections').addEventListener('change', () => {
+                buildIntersections(
+                    parseInt(document.getElementById('resolution').value),
+                    parseInt(document.getElementById('range').value)
+                );
             });
 
             document.getElementById('exportSTL').addEventListener('click', exportSTL);
@@ -572,90 +616,99 @@
             });
         }
 
-        // Last status shown under the equation field, kept so the language
-        // toggle can redraw it in the new language.
-        let lastStatus = null;
-
-        function setStatus(cls, key, detail) {
-            lastStatus = { cls, key, detail };
-            renderStatus();
+        function visibleSurfaces() {
+            return surfaces.filter(s => s.visible && s.mesh);
         }
 
-        function renderStatus() {
-            const el = document.getElementById('equation-status');
-            el.textContent = '';
-            if (!lastStatus) return;
-            const span = document.createElement('span');
-            span.className = lastStatus.cls;
-            // textContent, not innerHTML: `detail` is a parser message derived
-            // from whatever the user typed.
-            span.textContent = tr(lastStatus.key) + (lastStatus.detail ? ' — ' + lastStatus.detail : '');
-            el.appendChild(span);
+        function surfaceById(id) {
+            return surfaces.find(s => s.id === id) || null;
         }
 
-        function generateSurface() {
-            const equationText = document.getElementById('equation').value.trim();
-
-            if (!equationText) {
-                setStatus('status-err', 'statusEmpty');
-                return;
+        // Detaches one surface's meshes and frees their GPU buffers.
+        function clearSurfaceMeshes(s) {
+            if (s.wireMesh) {
+                scene.remove(s.wireMesh);
+                s.wireMesh.material.dispose();
+                s.wireMesh = null;
             }
-
-            let compiled;
-            try {
-                compiled = math.parse(equationText).compile();
-                compiled.evaluate({ x: 1, y: 1, ...parameters });
-            } catch (error) {
-                setStatus('status-err', 'statusInvalid', error.message);
-                return;
+            if (s.mesh) {
+                scene.remove(s.mesh);
+                s.mesh.material.dispose();
+                s.mesh.geometry.dispose();   // shared with the wireframe, so freed once
+                s.mesh = null;
             }
-
-            setStatus('status-ok', 'statusValid');
-            currentEquation = equationText;
-            createSurface(compiled);
+            s.gridZ = null;
         }
 
-        // Detaches the current surface and frees its GPU buffers.
-        function clearSurface() {
-            if (wireframe) {
-                scene.remove(wireframe);
-                wireframe.material.dispose();
-                wireframe = null;
-            }
-            if (surface) {
-                scene.remove(surface);
-                surface.material.dispose();
-                surface.geometry.dispose();   // shared with the wireframe, so freed once
-                surface = null;
-            }
+        function clearIntersections() {
+            if (!intersectionLines) return;
+            scene.remove(intersectionLines);
+            intersectionLines.geometry.dispose();
+            intersectionLines.material.dispose();
+            intersectionLines = null;
         }
 
-        function createSurface(compiledEquation) {
+        // Rebuilds every surface plus the intersection curves. This is the single
+        // entry point used by the Generate button and by scheduleRebuild().
+        function regenerateAll() {
             const resolution = parseInt(document.getElementById('resolution').value);
             const range = parseInt(document.getElementById('range').value);
             const thickness = parseFloat(document.getElementById('thickness').value);
             const zScale = parseFloat(document.getElementById('zScale').value);
             const opacity = parseFloat(document.getElementById('opacity').value);
 
-            clearSurface();
+            clearIntersections();
 
-            const geometry = createSolidGeometry(resolution, range, thickness, zScale, compiledEquation);
+            for (const s of surfaces) {
+                clearSurfaceMeshes(s);
+                s.error = null;
+
+                const text = s.equation.trim();
+                if (!text) {
+                    s.error = { key: 'statusEmpty' };
+                    continue;
+                }
+
+                let compiled;
+                try {
+                    compiled = math.parse(text).compile();
+                    compiled.evaluate({ x: 1, y: 1, ...parameters });
+                } catch (error) {
+                    s.error = { key: 'statusInvalid', detail: error.message };
+                    continue;
+                }
+
+                // gridZ is kept so the intersection pass can reuse the samples
+                // instead of evaluating every equation a second time.
+                s.gridZ = sampleGrid(resolution, range, zScale, compiled);
+                buildSurfaceMeshes(s, resolution, range, thickness, opacity);
+            }
+
+            buildIntersections(resolution, range);
+            renderSurfaceStatuses();
+            updateDimensions();
+        }
+
+        function buildSurfaceMeshes(s, resolution, range, thickness, opacity) {
+            const color = SURFACE_COLORS[s.colorIndex % SURFACE_COLORS.length];
+            const geometry = createSolidGeometry(resolution, range, thickness, s.gridZ);
 
             const material = new THREE.MeshPhongMaterial({
-                color: 0x009FE3,
+                color: color.solid,
                 transparent: true,
                 opacity: opacity,
                 side: THREE.DoubleSide,
                 shininess: 100
             });
 
-            surface = new THREE.Mesh(geometry, material);
-            surface.receiveShadow = true;
-            surface.castShadow = true;
-            scene.add(surface);
+            s.mesh = new THREE.Mesh(geometry, material);
+            s.mesh.receiveShadow = true;
+            s.mesh.castShadow = true;
+            s.mesh.visible = s.visible;
+            scene.add(s.mesh);
 
             const wireframeMaterial = new THREE.MeshBasicMaterial({
-                color: 0x0077A9,
+                color: color.wire,
                 wireframe: true,
                 transparent: true,
                 opacity: 0.3
@@ -663,44 +716,44 @@
 
             // Shares the solid's geometry — cloning it doubled memory and build
             // time to draw exactly the same triangles.
-            wireframe = new THREE.Mesh(geometry, wireframeMaterial);
-            wireframe.visible = showWireframe;
-            scene.add(wireframe);
-
-            updateDimensions();
+            s.wireMesh = new THREE.Mesh(geometry, wireframeMaterial);
+            s.wireMesh.visible = s.visible && showWireframe;
+            scene.add(s.wireMesh);
         }
 
-        function createSolidGeometry(resolution, range, thickness, zScale, compiledEquation) {
-            const geometry = new THREE.BufferGeometry();
-            const vertices = [];
-            const indices = [];
-
-            // One scope object reused across all (resolution+1)² samples instead
-            // of spreading `parameters` into a fresh object per vertex.
-            const scope = { x: 0, y: 0, ...parameters };
-
-            function calculateZ(x, y) {
-                scope.x = x;
-                scope.y = y;
-                try {
-                    const result = compiledEquation.evaluate(scope);
-                    return (typeof result === 'number' && isFinite(result)) ? result * zScale : 0;
-                } catch (e) {
-                    return 0;
-                }
-            }
-
+        // Samples z over the (resolution+1)² lattice once. Split out of the
+        // geometry builder so the intersection pass can reuse the same numbers.
+        function sampleGrid(resolution, range, zScale, compiled) {
             const step = (range * 2) / resolution;
-            const gridZ = [];   // gridZ[i][j] = z top value
+            // One scope object reused across all samples instead of spreading
+            // `parameters` into a fresh object per vertex.
+            const scope = { x: 0, y: 0, ...parameters };
+            const gridZ = [];
 
             for (let i = 0; i <= resolution; i++) {
                 gridZ[i] = [];
                 for (let j = 0; j <= resolution; j++) {
-                    const x = -range + i * step;
-                    const y = -range + j * step;
-                    gridZ[i][j] = calculateZ(x, y);
+                    scope.x = -range + i * step;
+                    scope.y = -range + j * step;
+                    let z;
+                    try {
+                        const result = compiled.evaluate(scope);
+                        z = (typeof result === 'number' && isFinite(result)) ? result * zScale : 0;
+                    } catch (e) {
+                        z = 0;
+                    }
+                    gridZ[i][j] = z;
                 }
             }
+            return gridZ;
+        }
+
+        function createSolidGeometry(resolution, range, thickness, gridZ) {
+            const geometry = new THREE.BufferGeometry();
+            const vertices = [];
+            const indices = [];
+
+            const step = (range * 2) / resolution;
 
             // Helper: push a vertex and return its index
             function pushV(x, y, z) {
@@ -785,9 +838,104 @@
             return geometry;
         }
 
+        // --- Intersection curves ------------------------------------------------
+        // Where two surfaces cross, zA(x,y) = zB(x,y), i.e. the zero level set of
+        // the difference field d = zA - zB. Marching squares over the same lattice
+        // the surfaces were sampled on gives that curve directly, with no extra
+        // equation evaluations and no geometry library.
+        function buildIntersections(resolution, range) {
+            clearIntersections();
+            if (!document.getElementById('show-intersections').checked) return;
+
+            const visible = visibleSurfaces().filter(s => s.gridZ);
+            if (visible.length < 2) return;
+
+            const coords = [];
+            for (let a = 0; a < visible.length; a++) {
+                for (let b = a + 1; b < visible.length; b++) {
+                    marchingSquares(visible[a].gridZ, visible[b].gridZ, resolution, range, coords);
+                }
+            }
+            if (coords.length === 0) return;
+
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(coords, 3));
+            // The curve lies exactly on both surfaces, so depth testing would make
+            // it z-fight with them. Drawing it last without depth test keeps it
+            // crisp — which is what you want from a highlight anyway.
+            const material = new THREE.LineBasicMaterial({
+                color: INTERSECTION_COLOR,
+                depthTest: false,
+                transparent: true,
+                opacity: 0.9
+            });
+            intersectionLines = new THREE.LineSegments(geometry, material);
+            intersectionLines.renderOrder = 999;
+            scene.add(intersectionLines);
+        }
+
+        function marchingSquares(gridA, gridB, resolution, range, out) {
+            const step = (range * 2) / resolution;
+            const pos = i => -range + i * step;
+            const d = (i, j) => gridA[i][j] - gridB[i][j];
+
+            // Zero crossing on the segment between two lattice corners. z is taken
+            // from surface A; at the crossing the two surfaces agree by definition.
+            function crossing(i0, j0, i1, j1) {
+                const d0 = d(i0, j0);
+                const d1 = d(i1, j1);
+                const t = d0 === d1 ? 0.5 : d0 / (d0 - d1);
+                return [
+                    pos(i0) + (pos(i1) - pos(i0)) * t,
+                    gridA[i0][j0] + (gridA[i1][j1] - gridA[i0][j0]) * t,   // Three.js Y = height
+                    pos(j0) + (pos(j1) - pos(j0)) * t
+                ];
+            }
+
+            for (let i = 0; i < resolution; i++) {
+                for (let j = 0; j < resolution; j++) {
+                    // Corners walked counter-clockwise so edge k joins corner k to
+                    // corner k+1.
+                    const corner = [d(i, j), d(i + 1, j), d(i + 1, j + 1), d(i, j + 1)];
+
+                    let mask = 0;
+                    for (let k = 0; k < 4; k++) if (corner[k] > 0) mask |= 1 << k;
+                    if (mask === 0 || mask === 15) continue;   // no crossing in this cell
+
+                    const ends = [
+                        [i, j, i + 1, j],
+                        [i + 1, j, i + 1, j + 1],
+                        [i + 1, j + 1, i, j + 1],
+                        [i, j + 1, i, j]
+                    ];
+                    const crossed = [];
+                    for (let k = 0; k < 4; k++) {
+                        if ((corner[k] > 0) !== (corner[(k + 1) % 4] > 0)) crossed.push(k);
+                    }
+
+                    if (crossed.length === 2) {
+                        out.push(...crossing(...ends[crossed[0]]), ...crossing(...ends[crossed[1]]));
+                    } else if (crossed.length === 4) {
+                        // Saddle: the four crossings can be paired two ways. The
+                        // cell-centre average says which corners are isolated.
+                        const centre = (corner[0] + corner[1] + corner[2] + corner[3]) / 4;
+                        const pairs = (centre > 0) === (corner[0] > 0)
+                            ? [[0, 1], [2, 3]]
+                            : [[3, 0], [1, 2]];
+                        for (const [e0, e1] of pairs) {
+                            out.push(...crossing(...ends[e0]), ...crossing(...ends[e1]));
+                        }
+                    }
+                }
+            }
+        }
+
         function loadExample(equation) {
-            document.getElementById('equation').value = equation;
-            generateSurface();
+            const s = surfaceById(activeSurfaceId) || surfaces[0];
+            if (!s) return;
+            s.equation = equation;
+            renderSurfaceList();
+            regenerateAll();
         }
 
         function resetView() {
@@ -799,7 +947,137 @@
 
         function toggleWireframe() {
             showWireframe = !showWireframe;
-            if (wireframe) wireframe.visible = showWireframe;
+            for (const s of surfaces) {
+                if (s.wireMesh) s.wireMesh.visible = s.visible && showWireframe;
+            }
+        }
+
+        // --- Surface list UI ----------------------------------------------------
+        function addSurface(equation) {
+            if (surfaces.length >= MAX_SURFACES) return;
+            // First free colour, so removing the middle row does not leave two
+            // surfaces sharing a swatch.
+            const used = new Set(surfaces.map(s => s.colorIndex));
+            let colorIndex = 0;
+            while (used.has(colorIndex) && colorIndex < MAX_SURFACES) colorIndex++;
+
+            const s = {
+                id: nextSurfaceId++,
+                equation: equation !== undefined ? equation : '',
+                colorIndex,
+                visible: true,
+                mesh: null,
+                wireMesh: null,
+                gridZ: null,
+                error: null
+            };
+            surfaces.push(s);
+            activeSurfaceId = s.id;
+            renderSurfaceList();
+            regenerateAll();
+            return s;
+        }
+
+        function removeSurface(id) {
+            const index = surfaces.findIndex(s => s.id === id);
+            if (index === -1 || surfaces.length <= 1) return;
+            clearSurfaceMeshes(surfaces[index]);
+            surfaces.splice(index, 1);
+            if (activeSurfaceId === id) activeSurfaceId = surfaces[0].id;
+            renderSurfaceList();
+            regenerateAll();
+        }
+
+        function toggleSurfaceVisible(id) {
+            const s = surfaceById(id);
+            if (!s) return;
+            s.visible = !s.visible;
+            if (s.mesh) s.mesh.visible = s.visible;
+            if (s.wireMesh) s.wireMesh.visible = s.visible && showWireframe;
+            renderSurfaceList();
+            // Hiding a surface changes which pairs intersect and the export bounds.
+            buildIntersections(
+                parseInt(document.getElementById('resolution').value),
+                parseInt(document.getElementById('range').value)
+            );
+            updateDimensions();
+        }
+
+        function renderSurfaceList() {
+            const list = document.getElementById('surface-list');
+            list.textContent = '';
+
+            for (const s of surfaces) {
+                const color = SURFACE_COLORS[s.colorIndex % SURFACE_COLORS.length];
+
+                const row = document.createElement('div');
+                row.className = 'surface-row';
+
+                const swatch = document.createElement('button');
+                swatch.className = 'surface-swatch' + (s.visible ? '' : ' is-hidden');
+                swatch.style.setProperty('--swatch', color.css);
+                swatch.title = tr(s.visible ? 'hideSurface' : 'showSurface');
+                swatch.setAttribute('aria-pressed', String(s.visible));
+                swatch.addEventListener('click', () => toggleSurfaceVisible(s.id));
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'equation-input-full surface-equation';
+                input.value = s.equation;
+                input.placeholder = tr('equationPlaceholder');
+                input.addEventListener('focus', () => { activeSurfaceId = s.id; });
+                input.addEventListener('input', () => {
+                    s.equation = input.value;
+                    scheduleEquationRebuild();
+                });
+                input.addEventListener('keypress', e => {
+                    if (e.key === 'Enter') {
+                        clearTimeout(equationTimer);
+                        equationTimer = null;
+                        regenerateAll();
+                    }
+                });
+
+                row.append(swatch, input);
+
+                if (surfaces.length > 1) {
+                    const remove = document.createElement('button');
+                    remove.className = 'surface-remove';
+                    remove.textContent = '×';
+                    remove.title = tr('removeSurface');
+                    remove.addEventListener('click', () => removeSurface(s.id));
+                    row.appendChild(remove);
+                }
+
+                const status = document.createElement('div');
+                status.className = 'surface-status';
+                status.dataset.surfaceId = String(s.id);
+
+                list.append(row, status);
+            }
+
+            document.getElementById('add-surface').disabled = surfaces.length >= MAX_SURFACES;
+            renderSurfaceStatuses();
+        }
+
+        function renderSurfaceStatuses() {
+            for (const el of document.querySelectorAll('.surface-status')) {
+                const s = surfaceById(Number(el.dataset.surfaceId));
+                el.textContent = '';
+                if (!s) continue;
+
+                const span = document.createElement('span');
+                if (s.error) {
+                    span.className = 'status-err';
+                    // textContent, not innerHTML: `detail` is a parser message
+                    // derived from whatever the user typed.
+                    span.textContent = tr(s.error.key) + (s.error.detail ? ' — ' + s.error.detail : '');
+                } else {
+                    span.className = 'status-ok';
+                    span.textContent = tr('statusValid');
+                }
+                el.appendChild(span);
+            }
         }
 
         function toggleAutoRotate() {
@@ -920,7 +1198,7 @@
         // the same task as the render — toBlob snapshots the bitmap synchronously
         // and only the PNG encoding is deferred, so this is safe.
         function exportPNG() {
-            if (!surface) {
+            if (visibleSurfaces().length === 0) {
                 alert(tr('needSurface'));
                 return;
             }
@@ -945,60 +1223,67 @@
             renderer.setSize(width, height);
         }
 
+        // Every visible surface goes into a single `solid` block as a separate
+        // disconnected body. One block rather than several is deliberate: plenty
+        // of slicers only read the first `solid` of a multi-solid ASCII file,
+        // whereas disconnected bodies inside one mesh are universally understood.
         function exportSTL() {
-            if (!surface) {
+            const visible = visibleSurfaces();
+            if (visible.length === 0) {
                 alert(tr('needSurface'));
                 return;
             }
 
-            const geometry = surface.geometry;
-            const pos = geometry.attributes.position.array;
-            const idxArr = geometry.index.array;
             const scale = mmPerUnit;  // convert Three.js units → mm
 
-            // Three.js uses Y-up internally for the surface height.
-            // STL slicers expect Z-up. Swap: STL(x,y,z) = THREE(x*s, z*s, y*s)
-            function toStlVertex(idx) {
-                const base = idx * 3;
-                return {
-                    x: pos[base]     * scale,   // X stays X
-                    y: pos[base + 2] * scale,   // Three Z → STL Y
-                    z: pos[base + 1] * scale    // Three Y → STL Z (up)
-                };
-            }
-
             // Collected as chunks and joined once: at resolution 100 this is
-            // ~41k facets, and repeated concatenation of a multi-MB string is
-            // needlessly slow.
-            const parts = ['solid equation\n'];
+            // ~41k facets per surface, and repeated concatenation of a multi-MB
+            // string is needlessly slow.
+            const parts = ['solid mathsurface\n'];
 
-            for (let i = 0; i < idxArr.length; i += 3) {
-                const v1 = toStlVertex(idxArr[i]);
-                const v2 = toStlVertex(idxArr[i + 1]);
-                const v3 = toStlVertex(idxArr[i + 2]);
+            for (const s of visible) {
+                const pos = s.mesh.geometry.attributes.position.array;
+                const idxArr = s.mesh.geometry.index.array;
 
-                // Recalculate normal in STL space
-                const ax = v2.x - v1.x, ay = v2.y - v1.y, az = v2.z - v1.z;
-                const bx = v3.x - v1.x, by = v3.y - v1.y, bz = v3.z - v1.z;
-                let nx = ay * bz - az * by;
-                let ny = az * bx - ax * bz;
-                let nz = ax * by - ay * bx;
-                const len = Math.sqrt(nx*nx + ny*ny + nz*nz) || 1;
-                nx /= len; ny /= len; nz /= len;
+                // Three.js uses Y-up internally for the surface height.
+                // STL slicers expect Z-up. Swap: STL(x,y,z) = THREE(x*s, z*s, y*s)
+                function toStlVertex(idx) {
+                    const base = idx * 3;
+                    return {
+                        x: pos[base]     * scale,   // X stays X
+                        y: pos[base + 2] * scale,   // Three Z → STL Y
+                        z: pos[base + 1] * scale    // Three Y → STL Z (up)
+                    };
+                }
 
-                parts.push(
-                    `  facet normal ${nx.toFixed(6)} ${ny.toFixed(6)} ${nz.toFixed(6)}\n`,
-                    '    outer loop\n',
-                    `      vertex ${v1.x.toFixed(6)} ${v1.y.toFixed(6)} ${v1.z.toFixed(6)}\n`,
-                    `      vertex ${v2.x.toFixed(6)} ${v2.y.toFixed(6)} ${v2.z.toFixed(6)}\n`,
-                    `      vertex ${v3.x.toFixed(6)} ${v3.y.toFixed(6)} ${v3.z.toFixed(6)}\n`,
-                    '    endloop\n  endfacet\n'
-                );
+                for (let i = 0; i < idxArr.length; i += 3) {
+                    const v1 = toStlVertex(idxArr[i]);
+                    const v2 = toStlVertex(idxArr[i + 1]);
+                    const v3 = toStlVertex(idxArr[i + 2]);
+
+                    // Recalculate normal in STL space
+                    const ax = v2.x - v1.x, ay = v2.y - v1.y, az = v2.z - v1.z;
+                    const bx = v3.x - v1.x, by = v3.y - v1.y, bz = v3.z - v1.z;
+                    let nx = ay * bz - az * by;
+                    let ny = az * bx - ax * bz;
+                    let nz = ax * by - ay * bx;
+                    const len = Math.sqrt(nx*nx + ny*ny + nz*nz) || 1;
+                    nx /= len; ny /= len; nz /= len;
+
+                    parts.push(
+                        `  facet normal ${nx.toFixed(6)} ${ny.toFixed(6)} ${nz.toFixed(6)}\n`,
+                        '    outer loop\n',
+                        `      vertex ${v1.x.toFixed(6)} ${v1.y.toFixed(6)} ${v1.z.toFixed(6)}\n`,
+                        `      vertex ${v2.x.toFixed(6)} ${v2.y.toFixed(6)} ${v2.z.toFixed(6)}\n`,
+                        `      vertex ${v3.x.toFixed(6)} ${v3.y.toFixed(6)} ${v3.z.toFixed(6)}\n`,
+                        '    endloop\n  endfacet\n'
+                    );
+                }
             }
 
-            parts.push('endsolid equation');
+            parts.push('endsolid mathsurface');
 
-            downloadBlob(new Blob([parts.join('')], { type: 'model/stl' }), 'equation_3d.stl');
+            downloadBlob(new Blob([parts.join('')], { type: 'model/stl' }), 'mathsurface.stl');
         }
 
         // Accordion toggle
@@ -1026,7 +1311,13 @@
         // i18n
         const translations = {
             en: {
-                equation:         'Equation z = f(x, y)',
+                equation:         'Equations z = f(x, y)',
+                equationPlaceholder: 'e.g. A * sin(f*x + phi)',
+                addSurface:       '+ Add surface',
+                removeSurface:    'Remove this surface',
+                hideSurface:      'Hide this surface',
+                showSurface:      'Show this surface',
+                showIntersections: 'Intersection curves',
                 generate:         '▶ Generate',
                 reset:            '↺ Reset',
                 examples:         'Popular Examples',
@@ -1065,6 +1356,7 @@
                 helpHowTitle:     'How to use',
                 helpStep1:        'Enter your equation in the z = f(x, y) field.',
                 helpStep2:        'Click <strong>Generate</strong> or pick a preset example.',
+                helpStepSurfaces: 'Use <strong>+ Add surface</strong> for up to four equations at once. Where two of them cross, the intersection curve is drawn automatically. The colour swatch shows or hides a surface.',
                 helpStep3:        'Drag to rotate, scroll or pinch to zoom.',
                 helpStep4:        'Adjust sliders to tune parameters in real time.',
                 helpStep5:        'Click <strong>Export STL</strong> to download for 3D printing, or <strong>Export PNG</strong> for an image.',
@@ -1077,7 +1369,13 @@
                 viewSource:       'View source on GitHub →',
             },
             es: {
-                equation:         'Ecuación z = f(x, y)',
+                equation:         'Ecuaciones z = f(x, y)',
+                equationPlaceholder: 'ej. A * sin(f*x + phi)',
+                addSurface:       '+ Agregar superficie',
+                removeSurface:    'Quitar esta superficie',
+                hideSurface:      'Ocultar esta superficie',
+                showSurface:      'Mostrar esta superficie',
+                showIntersections: 'Curvas de intersección',
                 generate:         '▶ Generar',
                 reset:            '↺ Reiniciar',
                 examples:         'Ejemplos populares',
@@ -1116,6 +1414,7 @@
                 helpHowTitle:     'Cómo usar',
                 helpStep1:        'Escribe tu ecuación en el campo z = f(x, y).',
                 helpStep2:        'Haz clic en <strong>Generar</strong> o selecciona un ejemplo predefinido.',
+                helpStepSurfaces: 'Usa <strong>+ Agregar superficie</strong> para trabajar con hasta cuatro ecuaciones a la vez. Donde dos se cruzan, la curva de intersección se dibuja automáticamente. El cuadro de color muestra u oculta una superficie.',
                 helpStep3:        'Arrastra para rotar, scroll o pellizco para hacer zoom.',
                 helpStep4:        'Ajusta los sliders para modificar parámetros en tiempo real.',
                 helpStep5:        'Haz clic en <strong>Exportar STL</strong> para imprimir en 3D, o <strong>Exportar PNG</strong> para una imagen.',
@@ -1164,7 +1463,9 @@
             document.documentElement.lang = lang;
             document.getElementById('lang-toggle').textContent = lang === 'en' ? 'ES' : 'EN';
             updateRotateButton();
-            renderStatus();
+            // Rebuilt rather than patched: the rows carry translated titles and
+            // placeholders that data-i18n cannot reach.
+            if (surfaces.length) renderSurfaceList();
         }
 
         function toggleLang() {

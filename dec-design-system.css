@@ -170,15 +170,72 @@ body {
     box-shadow: 0 0 0 3px var(--dec-blue-glow);
 }
 
-#equation-status {
-    margin-bottom: 0.5rem;
-    min-height: 1.5rem;
-    font-size: 0.75rem;
-    font-family: var(--font-mono);
+/* ---- SURFACE LIST ---- */
+.surface-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
 }
 
-#equation-status .status-ok  { color: #16a34a; }
-#equation-status .status-err { color: var(--dec-orange-safety); }
+.surface-row .surface-equation {
+    flex: 1;
+    min-width: 0;
+    margin-bottom: 0;
+}
+
+/* Colour swatch doubles as the per-surface visibility toggle: filled when
+   visible, hollow when hidden. */
+.surface-swatch {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 2px solid var(--swatch, var(--dec-blue-primary));
+    background: var(--swatch, var(--dec-blue-primary));
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.15s;
+}
+
+.surface-swatch.is-hidden { background: transparent; }
+
+.surface-remove {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: transparent;
+    color: var(--dec-text-muted);
+    font-size: 1.1rem;
+    line-height: 1;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+}
+
+.surface-remove:hover {
+    color: var(--dec-orange-safety);
+    background: var(--dec-dark-bg);
+}
+
+.surface-status {
+    min-height: 1.35rem;
+    margin: 0.15rem 0 0.35rem 1.6rem;
+    font-size: 0.7rem;
+    font-family: var(--font-mono);
+    overflow-wrap: anywhere;
+}
+
+.surface-status .status-ok  { color: #16a34a; }
+.surface-status .status-err { color: var(--dec-orange-safety); }
+
+.btn-add {
+    width: 100%;
+    justify-content: center;
+    font-size: 0.72rem;
+    padding: 0.35rem 0.75rem;
+    margin-bottom: 0.6rem;
+}
 
 .button-group {
     display: flex;

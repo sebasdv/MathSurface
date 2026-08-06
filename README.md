@@ -17,8 +17,14 @@ Generador interactivo de superficies matemáticas 3D para impresión 3D. Visuali
    -0.25*x^3 - 0.25*y^3 + 0.5*x^2 + 0.5*y^2 - 0.25*x^2*y^2
    ```
 3. Haz clic en "Generar" o selecciona un ejemplo predefinido.
-4. Arrastra para rotar, scroll o pellizco para hacer zoom. El botón ⏸ del encabezado pausa la rotación automática.
-5. Exporta la superficie como STL para impresión 3D, o como PNG si solo quieres la imagen.
+4. Con "+ Agregar superficie" puedes graficar hasta cuatro ecuaciones a la vez. Donde dos se cruzan se dibuja automáticamente la **curva de intersección**.
+5. Arrastra para rotar, scroll o pellizco para hacer zoom. El botón ⏸ del encabezado pausa la rotación automática.
+6. Exporta como STL para impresión 3D (todas las superficies visibles, cada una como un cuerpo), o como PNG si solo quieres la imagen.
+
+### Superficies múltiples e intersecciones
+Los parámetros `A`, `f`, `phi` y `a1`…`a5` son **compartidos** entre todas las superficies: mover un slider mueve toda la familia, que es justamente lo útil al compararlas. Cada superficie tiene solo su propia ecuación, color y visibilidad.
+
+La curva de intersección es el conjunto de nivel cero del campo diferencia `d = z₁ − z₂`, calculado con marching squares sobre la misma malla con la que se teselan las superficies (sin evaluaciones extra ni librerías de geometría).
 
 ### Funciones soportadas
 `sin` `cos` `tan` `exp` `log` `sqrt` `abs` y operadores `+ - * / ^`
@@ -40,8 +46,14 @@ Interactive 3D math surface generator for 3D printing. Visualize and export z = 
    -0.25*x^3 - 0.25*y^3 + 0.5*x^2 + 0.5*y^2 - 0.25*x^2*y^2
    ```
 3. Click "Generate" or pick a preset example.
-4. Drag to rotate, scroll or pinch to zoom. The ⏸ button in the header pauses the auto-rotation.
-5. Export the surface as an STL file for 3D printing, or as a PNG if you just want the image.
+4. "+ Add surface" plots up to four equations at once. Where two of them cross, the **intersection curve** is drawn automatically.
+5. Drag to rotate, scroll or pinch to zoom. The ⏸ button in the header pauses the auto-rotation.
+6. Export as STL for 3D printing (every visible surface, each as its own body), or as PNG if you just want the image.
+
+### Multiple surfaces and intersections
+The `A`, `f`, `phi` and `a1`…`a5` parameters are **shared** across all surfaces: moving one slider moves the whole family, which is the point when you are comparing them. Each surface only owns its equation, colour and visibility.
+
+The intersection curve is the zero level set of the difference field `d = z₁ − z₂`, computed with marching squares over the same lattice the surfaces are tessellated on — no extra evaluations and no geometry library.
 
 ### Supported functions
 `sin` `cos` `tan` `exp` `log` `sqrt` `abs` and operators `+ - * / ^`
