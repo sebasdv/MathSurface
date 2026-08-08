@@ -255,6 +255,14 @@
                                     <input type="range" id="range" min="1" max="10" value="4">
                                     <span class="param-value" id="range-value">4</span>
                                 </div>
+                                <div id="base-row">
+                                    <label class="rev-label" data-i18n="baseLabel">Underside</label>
+                                    <div class="mode-switch axis-switch">
+                                        <button class="mode-btn active" id="base-flat" onclick="setBaseMode('flat')" data-i18n="baseFlat">Flat base</button>
+                                        <button class="mode-btn" id="base-offset" onclick="setBaseMode('offset')" data-i18n="baseOffset">Offset shell</button>
+                                    </div>
+                                    <div id="base-warning" hidden></div>
+                                </div>
                                 <div class="param-slider-inline" id="thickness-row">
                                     <label data-i18n="thickness">Thickness</label>
                                     <input type="range" id="thickness" min="0.1" max="2" step="0.1" value="0.3">
@@ -361,6 +369,7 @@
                     <li data-i18n="helpStepSurfaces">Use <strong>+ Add surface</strong> for up to four equations at once. Where two of them cross, the intersection curve is drawn automatically. The colour swatch shows or hides a surface.</li>
                     <li data-i18n="helpStepRevolution">Switch to <strong>Revolution</strong> for the disk, washer and shell methods. The panel compares the exact integral against the volume of the mesh it built, and the <strong>Riemann n</strong> slider draws the n slices the integral sums.</li>
                     <li data-i18n="helpStep3">Drag to rotate, scroll to zoom.</li>
+                    <li data-i18n="helpStepBase">Under <strong>Visualization</strong>, <strong>Underside</strong> picks a flat printable base or a constant-thickness shell.</li>
                     <li data-i18n="helpStep4">Adjust sliders to tune parameters in real time.</li>
                     <li data-i18n="helpStep5">Click <strong>Export STL</strong> to download for 3D printing.</li>
                 </ol>
@@ -410,6 +419,11 @@
         // It is a separate geometry path, selected by mode rather than mixed into
         // the surface list.
         let appMode = 'surfaces';       // 'surfaces' | 'revolution'
+        // 'flat' closes the model with one plane underneath, which is what a printer
+        // bed wants and can never self-intersect. 'offset' is the original
+        // constant-thickness shell, kept because a thin surface model is a
+        // legitimate thing to want — it just is not printable as-is.
+        let baseMode = 'flat';          // 'flat' | 'offset'
         const REV_EPS = 1e-9;
 
         let revolution = {
@@ -854,7 +868,10 @@
             const opacity = parseFloat(document.getElementById('opacity').value);
 
             clearIntersections();
+            let worstDrop = 0;
 
+            // Pass 1: sample every surface. Meshing waits because the flat base
+            // needs a plane shared by all of them.
             for (const s of surfaces) {
                 clearSurfaceMeshes(s);
                 s.error = null;
@@ -877,17 +894,64 @@
                 // gridZ is kept so the intersection pass can reuse the samples
                 // instead of evaluating every equation a second time.
                 s.gridZ = sampleGrid(resolution, range, zScale, compiled);
-                buildSurfaceMeshes(s, resolution, range, thickness, opacity);
+                if (s.visible) worstDrop = Math.max(worstDrop, maxAdjacentDrop(s.gridZ, resolution));
+            }
+
+            // One base plane under every body, so a multi-surface export sits on
+            // the bed as a unit instead of one body floating above it — and the
+            // relative heights, which the intersection curves depend on, survive.
+            // Deliberately computed over all surfaces rather than only the visible
+            // ones: that keeps the swatch toggle instant instead of forcing a
+            // rebuild, at the cost of a slightly deeper plinth when the lowest
+            // surface is hidden.
+            let zBase = Infinity;
+            for (const s of surfaces) {
+                if (!s.gridZ) continue;
+                for (const row of s.gridZ) for (const v of row) if (v < zBase) zBase = v;
+            }
+            zBase = Number.isFinite(zBase) ? zBase - thickness : 0;
+
+            // Pass 2: mesh.
+            for (const s of surfaces) {
+                if (!s.gridZ) continue;
+                buildSurfaceMeshes(s, resolution, range, thickness, opacity, baseMode, zBase);
             }
 
             buildIntersections(resolution, range);
             renderSurfaceStatuses();
             updateDimensions();
+            updateBaseWarning(worstDrop, thickness);
         }
 
-        function buildSurfaceMeshes(s, resolution, range, thickness, opacity) {
+        // Largest height difference between neighbouring samples. In 'offset' mode
+        // the bottom is the surface translated straight down by `thickness`, so once
+        // a drop exceeds the thickness the bottom of the higher cell sits above the
+        // top of the lower one and the solid passes through itself.
+        function maxAdjacentDrop(gridZ, resolution) {
+            let worst = 0;
+            for (let i = 0; i <= resolution; i++) {
+                for (let j = 0; j <= resolution; j++) {
+                    if (i < resolution) worst = Math.max(worst, Math.abs(gridZ[i][j] - gridZ[i+1][j]));
+                    if (j < resolution) worst = Math.max(worst, Math.abs(gridZ[i][j] - gridZ[i][j+1]));
+                }
+            }
+            return worst;
+        }
+
+        function updateBaseWarning(worstDrop, thickness) {
+            const el = document.getElementById('base-warning');
+            const bad = baseMode === 'offset' && worstDrop > thickness;
+            el.hidden = !bad;
+            if (bad) {
+                el.textContent = tr('baseSelfIntersect')
+                    .replace('{drop}', worstDrop.toFixed(2))
+                    .replace('{t}', thickness.toFixed(2));
+            }
+        }
+
+        function buildSurfaceMeshes(s, resolution, range, thickness, opacity, baseMode, zBase) {
             const color = SURFACE_COLORS[s.colorIndex % SURFACE_COLORS.length];
-            const geometry = createSolidGeometry(resolution, range, thickness, s.gridZ);
+            const geometry = createSolidGeometry(resolution, range, thickness, s.gridZ, baseMode, zBase);
 
             const material = new THREE.MeshPhongMaterial({
                 color: color.solid,
@@ -944,7 +1008,7 @@
             return gridZ;
         }
 
-        function createSolidGeometry(resolution, range, thickness, gridZ) {
+        function createSolidGeometry(resolution, range, thickness, gridZ, baseMode, zBase) {
             const geometry = new THREE.BufferGeometry();
             const vertices = [];
             const indices = [];
@@ -984,19 +1048,59 @@
                 }
             }
 
-            // --- BOTTOM SURFACE (flat at z_top - thickness, normals pointing down) ---
+            // --- BOTTOM SURFACE ---
+            // 'flat' puts a single plane under the whole model, at
+            // min(gridZ) - thickness: a printable plinth with a flat bed contact,
+            // and it can never self-intersect. 'offset' keeps the original
+            // constant-thickness shell (the surface translated straight down),
+            // which uses far less material but has no flat base and pokes through
+            // itself wherever the drop between neighbouring samples exceeds the
+            // thickness.
+            //
+            // Only the PERIMETER of botIdx is ever read by the wall loops below, so
+            // the flat base leaves the interior of that array empty and closes
+            // itself with a fan instead of a full lattice. At resolution 100 that
+            // is 400 triangles rather than 20 000 coplanar ones — which matters,
+            // since every one of them lands in the exported STL.
             const botIdx = [];
-            for (let i = 0; i <= resolution; i++) {
-                botIdx[i] = [];
-                for (let j = 0; j <= resolution; j++) {
-                    const x = -range + i * step;
-                    const y = -range + j * step;
-                    botIdx[i][j] = pushV(x, gridZ[i][j] - thickness, y);
+            for (let i = 0; i <= resolution; i++) botIdx[i] = [];
+
+            if (baseMode === 'offset') {
+                for (let i = 0; i <= resolution; i++) {
+                    for (let j = 0; j <= resolution; j++) {
+                        const x = -range + i * step;
+                        const y = -range + j * step;
+                        botIdx[i][j] = pushV(x, gridZ[i][j] - thickness, y);
+                    }
                 }
-            }
-            for (let i = 0; i < resolution; i++) {
-                for (let j = 0; j < resolution; j++) {
-                    addQuadFlip(botIdx[i][j], botIdx[i+1][j], botIdx[i+1][j+1], botIdx[i][j+1]);
+                for (let i = 0; i < resolution; i++) {
+                    for (let j = 0; j < resolution; j++) {
+                        addQuadFlip(botIdx[i][j], botIdx[i+1][j], botIdx[i+1][j+1], botIdx[i][j+1]);
+                    }
+                }
+            } else {
+                const at = (i, j) => [-range + i * step, -range + j * step];
+
+                // Perimeter as one closed loop, so the fan below has no seam. The
+                // four runs each stop one short of the corner the next run starts
+                // on.
+                const loop = [];
+                const addPerimeter = (i, j) => {
+                    const [x, y] = at(i, j);
+                    const idx = pushV(x, zBase, y);
+                    botIdx[i][j] = idx;
+                    loop.push(idx);
+                };
+                for (let i = 0; i < resolution; i++) addPerimeter(i, 0);
+                for (let j = 0; j < resolution; j++) addPerimeter(resolution, j);
+                for (let i = resolution; i > 0; i--) addPerimeter(i, resolution);
+                for (let j = resolution; j > 0; j--) addPerimeter(0, j);
+
+                const centre = pushV(0, zBase, 0);
+                for (let k = 0; k < loop.length; k++) {
+                    // (centre, P_k, P_k+1) with this loop order gives -Y, i.e. the
+                    // base faces down. Checked by hand on the front edge.
+                    indices.push(centre, loop[k], loop[(k + 1) % loop.length]);
                 }
             }
 
@@ -1623,7 +1727,16 @@
             // are built on heightfield samples that do not exist in this mode.
             document.getElementById('thickness-row').hidden = mode !== 'surfaces';
             document.getElementById('intersections-row').hidden = mode !== 'surfaces';
+            document.getElementById('base-row').hidden = mode !== 'surfaces';
 
+            regenerateAll();
+        }
+
+        function setBaseMode(mode) {
+            if (mode === baseMode) return;
+            baseMode = mode;
+            document.getElementById('base-flat').classList.toggle('active', mode === 'flat');
+            document.getElementById('base-offset').classList.toggle('active', mode === 'offset');
             regenerateAll();
         }
 
@@ -2076,6 +2189,10 @@
                 hideSurface:      'Hide this surface',
                 showSurface:      'Show this surface',
                 showIntersections: 'Intersection curves',
+                baseLabel:        'Underside',
+                baseFlat:         'Flat base',
+                baseOffset:       'Offset shell',
+                baseSelfIntersect: 'The surface drops {drop} between neighbouring samples, more than the {t} thickness, so the offset shell passes through itself. Switch to a flat base, raise the thickness, or lower the Z scale.',
                 generate:         '▶ Generate',
                 reset:            '↺ Reset',
                 examples:         'Popular Examples',
@@ -2117,6 +2234,7 @@
                 helpStepSurfaces: 'Use <strong>+ Add surface</strong> for up to four equations at once. Where two of them cross, the intersection curve is drawn automatically. The colour swatch shows or hides a surface.',
                 helpStepRevolution: 'Switch to <strong>Revolution</strong> for the disk, washer and shell methods. The panel compares the exact integral against the volume of the mesh it built, and the <strong>Riemann n</strong> slider draws the n slices the integral sums.',
                 helpStep3:        'Drag to rotate, scroll or pinch to zoom.',
+                helpStepBase:     'Under <strong>Visualization</strong>, <strong>Underside</strong> picks a flat printable base or a constant-thickness shell.',
                 helpStep4:        'Adjust sliders to tune parameters in real time.',
                 helpStep5:        'Click <strong>Export STL</strong> to download for 3D printing, or <strong>Export PNG</strong> for an image.',
                 helpFunctions:    'Available Functions',
@@ -2161,6 +2279,10 @@
                 hideSurface:      'Ocultar esta superficie',
                 showSurface:      'Mostrar esta superficie',
                 showIntersections: 'Curvas de intersección',
+                baseLabel:        'Cara inferior',
+                baseFlat:         'Base plana',
+                baseOffset:       'Cáscara desplazada',
+                baseSelfIntersect: 'La superficie cae {drop} entre muestras vecinas, más que el grosor {t}, así que la cáscara desplazada se atraviesa a sí misma. Cambia a base plana, sube el grosor, o baja la escala Z.',
                 generate:         '▶ Generar',
                 reset:            '↺ Reiniciar',
                 examples:         'Ejemplos populares',
@@ -2202,6 +2324,7 @@
                 helpStepSurfaces: 'Usa <strong>+ Agregar superficie</strong> para trabajar con hasta cuatro ecuaciones a la vez. Donde dos se cruzan, la curva de intersección se dibuja automáticamente. El cuadro de color muestra u oculta una superficie.',
                 helpStepRevolution: 'Cambia a <strong>Revolución</strong> para los métodos del disco, la arandela y la cáscara. El panel compara la integral exacta con el volumen de la malla que generó, y el slider <strong>n de Riemann</strong> dibuja las n rebanadas que suma la integral.',
                 helpStep3:        'Arrastra para rotar, scroll o pellizco para hacer zoom.',
+                helpStepBase:     'En <strong>Visualización</strong>, <strong>Cara inferior</strong> elige entre base plana imprimible o cáscara de grosor constante.',
                 helpStep4:        'Ajusta los sliders para modificar parámetros en tiempo real.',
                 helpStep5:        'Haz clic en <strong>Exportar STL</strong> para imprimir en 3D, o <strong>Exportar PNG</strong> para una imagen.',
                 helpFunctions:    'Funciones disponibles',

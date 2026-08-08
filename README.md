@@ -47,6 +47,18 @@ Cuando la región se cierra a nada en un punto **interior**, el sólido se toca 
 
 En modo disco/arandela el sólido se exporta acostado sobre el eje X. En modo cáscara sale de pie, con base circular plana — mejor para imprimir directamente.
 
+### Cara inferior: base plana o cáscara
+El selector **Cara inferior** decide cómo se cierra el modelo por abajo:
+
+- **Base plana** (por defecto): un solo plano bajo todo el modelo, en `min(z) − grosor`. Apoya en la cama de impresión, y no puede auto-intersectarse nunca.
+- **Cáscara desplazada**: la superficie trasladada recto hacia abajo, de grosor constante. Gasta mucho menos material, pero no tiene base plana y **se atraviesa a sí misma** donde la caída entre muestras vecinas supera el grosor. La app detecta esa condición y avisa con los números concretos.
+
+Con varias superficies el plano base es **común a todas**, para que la exportación apoye como una sola pieza en vez de dejar un cuerpo flotando; las alturas relativas se conservan, que es de lo que dependen las curvas de intersección.
+
+La base se cierra con un abanico desde el centro al perímetro, no con una retícula completa: a resolución 100 son 400 triángulos en vez de 20.000 coplanares, y cada uno de ellos terminaría en el STL exportado (21.200 facetas contra 40.800).
+
+Verificado: el volumen de la malla coincide con la integral doble `∫∫(z − z_base) dA` al 0.0000% en cuatro superficies distintas, los 4·n triángulos de la base tienen normal exactamente hacia abajo, y no queda ningún vértice bajo el plano.
+
 ### Superficies múltiples e intersecciones
 Los parámetros `A`, `f`, `phi` y `a1`…`a5` son **compartidos** entre todas las superficies: mover un slider mueve toda la familia, que es justamente lo útil al compararlas. Cada superficie tiene solo su propia ecuación, color y visibilidad.
 
@@ -101,6 +113,18 @@ Verified against twenty solids with closed-form volumes (sphere, cone, paraboloi
 Where the region closes to nothing at an **interior** point, the solid genuinely touches itself along a circle. That is faithful geometry rather than an error, but it leaves a non-manifold edge some slicers flag, so the app reports how many such points it found.
 
 In disk/washer mode the solid exports lying along the X axis. In shell mode it comes out standing up, with a flat circular base — better for printing as-is.
+
+### Underside: flat base or offset shell
+The **Underside** selector decides how the model closes at the bottom:
+
+- **Flat base** (default): one plane under the whole model, at `min(z) − thickness`. It sits on the print bed, and it can never self-intersect.
+- **Offset shell**: the surface translated straight down, constant thickness. Far less material, but no flat base, and it **passes through itself** wherever the drop between neighbouring samples exceeds the thickness. The app detects that and warns with the actual numbers.
+
+With several surfaces the base plane is **shared**, so an export sits on the bed as one piece rather than leaving a body floating; relative heights survive, which is what the intersection curves depend on.
+
+The base closes with a fan from the centre to the perimeter rather than a full lattice: at resolution 100 that is 400 triangles instead of 20,000 coplanar ones, and every one of them would land in the exported STL (21,200 facets against 40,800).
+
+Verified: the mesh volume matches the double integral `∫∫(z − z_base) dA` to 0.0000% across four different surfaces, all 4·n base triangles have a normal pointing exactly straight down, and no vertex is left below the plane.
 
 ### Multiple surfaces and intersections
 The `A`, `f`, `phi` and `a1`…`a5` parameters are **shared** across all surfaces: moving one slider moves the whole family, which is the point when you are comparing them. Each surface only owns its equation, colour and visibility.

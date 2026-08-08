@@ -214,6 +214,18 @@ body {
 
 #pinch-note[hidden] { display: none; }
 
+#base-row { margin-bottom: 0.6rem; }
+#base-row[hidden] { display: none; }
+
+#base-warning {
+    margin-top: 0.15rem;
+    font-size: 0.64rem;
+    line-height: 1.45;
+    color: var(--dec-orange-dark);
+}
+
+#base-warning[hidden] { display: none; }
+
 .rev-label {
     display: block;
     font-family: var(--font-mono);
