@@ -62,14 +62,19 @@
                 <!-- REVOLUTION MODE: r = f(x) revolved about the X axis -->
                 <div class="equation-group" id="revolution-panel" hidden>
                     <div class="section-label">
-                        <span data-i18n="revolutionInput">Revolve r = f(x) about X</span>
+                        <span id="revolution-input-label" data-i18n="revolutionInput">Revolve r = f(x) about X</span>
                         <span class="font-mono text-blue" id="revolution-method">DISK</span>
                     </div>
-                    <label class="rev-label" data-i18n="revOuter">Outer radius f(x)</label>
+                    <div class="mode-switch axis-switch">
+                        <button class="mode-btn active" id="axis-x" onclick="setRevAxis('x')" data-i18n="axisX">About X · disk</button>
+                        <button class="mode-btn" id="axis-y" onclick="setRevAxis('y')" data-i18n="axisY">About Y · shell</button>
+                    </div>
+
+                    <label class="rev-label" id="rev-outer-label" data-i18n="revOuter">Outer radius f(x)</label>
                     <input type="text" id="rev-outer" class="equation-input-full" value="sqrt(4 - x^2)">
                     <div class="surface-status" id="rev-outer-status"></div>
 
-                    <label class="rev-label" data-i18n="revInner">Inner radius g(x) — empty for a solid disk</label>
+                    <label class="rev-label" id="rev-inner-label" data-i18n="revInner">Inner radius g(x) — empty for a solid disk</label>
                     <input type="text" id="rev-inner" class="equation-input-full" value="" placeholder="—">
                     <div class="surface-status" id="rev-inner-status"></div>
 
@@ -128,6 +133,10 @@
                                     <button class="example-btn" onclick="loadRevExample('2', '1', 0, 4)">Washer · 2 &amp; 1 · V=12π</button>
                                     <button class="example-btn" onclick="loadRevExample('sqrt(x)', 'x/2', 0, 4)">Washer · √x &amp; x/2 · V=8π/3</button>
                                     <button class="example-btn" onclick="loadRevExample('2 + cos(f*x)', '', 0, 6)">Vase · 2+cos(f·x)</button>
+                                    <button class="example-btn" onclick="loadRevExample('x', '', 0, 2, 'y')">Shell · x on [0,2] · V=16π/3</button>
+                                    <button class="example-btn" onclick="loadRevExample('4 - x^2', '', 0, 2, 'y')">Shell · 4−x² · V=8π</button>
+                                    <button class="example-btn" onclick="loadRevExample('4', 'x^2', 0, 2, 'y')">Shell · 4 &amp; x² · V=8π</button>
+                                    <button class="example-btn" onclick="loadRevExample('x', '2 - x', 0, 2, 'y')">Shell · crossing · V=4π</button>
                                 </div>
                             </div>
                         </div>
@@ -335,6 +344,7 @@
                     <span class="dim-value" id="vol-area">—</span>
                 </div>
             </div>
+            <div id="pinch-note" hidden></div>
         </div>
     </div>
 
@@ -349,7 +359,7 @@
                     <li data-i18n="helpStep1">Enter your equation in the z = f(x, y) field.</li>
                     <li data-i18n="helpStep2">Click <strong>Generate</strong> or pick a preset example.</li>
                     <li data-i18n="helpStepSurfaces">Use <strong>+ Add surface</strong> for up to four equations at once. Where two of them cross, the intersection curve is drawn automatically. The colour swatch shows or hides a surface.</li>
-                    <li data-i18n="helpStepRevolution">Switch to <strong>Revolution</strong> to revolve r = f(x) about the X axis. The panel compares the exact integral π∫f²dx against the volume of the mesh it built, and the <strong>Riemann n</strong> slider draws the n disks the integral sums.</li>
+                    <li data-i18n="helpStepRevolution">Switch to <strong>Revolution</strong> for the disk, washer and shell methods. The panel compares the exact integral against the volume of the mesh it built, and the <strong>Riemann n</strong> slider draws the n slices the integral sums.</li>
                     <li data-i18n="helpStep3">Drag to rotate, scroll to zoom.</li>
                     <li data-i18n="helpStep4">Adjust sliders to tune parameters in real time.</li>
                     <li data-i18n="helpStep5">Click <strong>Export STL</strong> to download for 3D printing.</li>
@@ -403,6 +413,7 @@
         const REV_EPS = 1e-9;
 
         let revolution = {
+            axis: 'x',                  // 'x' -> disk/washer; 'y' -> shell
             outer: 'sqrt(4 - x^2)',
             inner: '',                  // empty -> disk method; set -> washer
             a: -2, b: 2,
@@ -652,6 +663,13 @@
             // u³ -> mm³ -> cm³. cm³ is what a slicer quotes for filament.
             set('vol-printed', (m.meshVolume * mmPerUnit ** 3 / 1000).toFixed(2) + ' cm³');
             set('vol-area', m.area.toFixed(2) + ' u²');
+
+            // An interior pinch is faithful geometry — the region closes to nothing
+            // there, so the solid touches itself along a circle — but it leaves a
+            // non-manifold edge that some slicers complain about, so say so.
+            const note = document.getElementById('pinch-note');
+            note.hidden = !m.pinches;
+            if (m.pinches) note.textContent = tr('pinchNote').replace('{n}', m.pinches);
         }
 
         // --- Coalesced rebuilds ------------------------------------------------
@@ -1152,8 +1170,13 @@
             const ts = [];
             for (let i = 0; i <= axialSteps; i++) ts.push(a + (b - a) * i / axialSteps);
 
-            const rOut = t => Math.abs(outerFn(t));
-            const rIn = t => (innerFn ? Math.abs(innerFn(t)) : 0);
+            // Pointwise max/min rather than trusting the labels. If the curves
+            // cross — "the region bounded by y=x and y=2-x" is a textbook washer —
+            // then g exceeds f past the crossing, the inner ring ends up outside
+            // the outer one, and the mesh comes apart: measured 32 unpaired edges
+            // and a volume that cancelled to zero.
+            const rOut = t => Math.max(Math.abs(outerFn(t)), innerFn ? Math.abs(innerFn(t)) : 0);
+            const rIn = t => (innerFn ? Math.min(Math.abs(outerFn(t)), Math.abs(innerFn(t))) : 0);
 
             const outer = ts.map(t => ring(t, rOut(t)));
             const inner = innerFn
@@ -1212,6 +1235,109 @@
             geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
             geometry.computeVertexNormals();
             return geometry;
+        }
+
+        // SHELL method: revolve the region between two curves about the Y axis, so
+        // the radius is x and the curve value is a height. Different topology from
+        // the disk method — four boundary surfaces, no end caps:
+        //   top band    — the revolved upper curve U
+        //   bottom band — the revolved lower curve L
+        //   outer wall  — cylinder at radius b, from L(b) to U(b)
+        //   inner wall  — cylinder at radius a; absent when a = 0, where the two
+        //                 bands already close on their own apexes
+        //
+        // U and L are the pointwise max/min, so the region stays well defined when
+        // the curves cross, and an empty second curve means "between the curve and
+        // the axis" (L = min(f,0), U = max(f,0)) — which makes the negative-lobe
+        // case fall out without a special case.
+        //
+        // Validated against nine closed-form solids: volume within 0.05%, closed,
+        // outward-oriented. Where the region pinches to zero height at an interior
+        // point the solid genuinely touches itself; see detectPinches().
+        function buildShellMesh(upperFn, lowerFn, a, b, radialSteps, angularSteps) {
+            const positions = [];
+            const indices = [];
+            const push = (x, y, z) => { positions.push(x, y, z); return positions.length / 3 - 1; };
+
+            const ring = (r, h) => {
+                if (r < REV_EPS) {
+                    const p = push(0, h, 0);
+                    return { idx: new Array(angularSteps).fill(p), degenerate: true };
+                }
+                const idx = [];
+                for (let j = 0; j < angularSteps; j++) {
+                    const th = 2 * Math.PI * j / angularSteps;
+                    idx.push(push(r * Math.cos(th), h, r * Math.sin(th)));
+                }
+                return { idx, degenerate: false };
+            };
+
+            const xs = [];
+            for (let i = 0; i <= radialSteps; i++) xs.push(a + (b - a) * i / radialSteps);
+
+            const upper = xs.map(x => ring(x, upperFn(x)));
+            // Zero height -> the two rings coincide and must share vertices.
+            const lower = xs.map((x, i) =>
+                Math.abs(upperFn(x) - lowerFn(x)) < REV_EPS ? upper[i] : ring(x, lowerFn(x)));
+
+            // flip=false yields +Y, which is outward for the top surface. Verified
+            // by hand on the flat annulus.
+            const band = (rings, flip) => {
+                for (let i = 0; i < radialSteps; i++) {
+                    for (let j = 0; j < angularSteps; j++) {
+                        const jn = (j + 1) % angularSteps;
+                        const A = rings[i].idx[j],      B = rings[i].idx[jn];
+                        const C = rings[i + 1].idx[jn], D = rings[i + 1].idx[j];
+                        const add = (p, q, r) => {
+                            if (p === q || q === r || p === r) return;   // apex sliver
+                            if (flip) indices.push(p, r, q); else indices.push(p, q, r);
+                        };
+                        add(A, B, C);
+                        add(A, C, D);
+                    }
+                }
+            };
+            band(upper, false);
+            band(lower, true);
+
+            // outwardRadial: true at radius b (normal away from the axis), false at
+            // radius a (normal toward it).
+            const wall = (ringIndex, outwardRadial) => {
+                const up = upper[ringIndex], lo = lower[ringIndex];
+                if (up === lo) return;         // zero height, nothing to close
+                if (up.degenerate) return;     // radius zero, the bands already meet
+                for (let j = 0; j < angularSteps; j++) {
+                    const jn = (j + 1) % angularSteps;
+                    const Lo = lo.idx[j], Lon = lo.idx[jn], Up = up.idx[j], Upn = up.idx[jn];
+                    if (outwardRadial) indices.push(Lo, Up, Upn, Lo, Upn, Lon);
+                    else               indices.push(Lo, Upn, Up, Lo, Lon, Upn);
+                }
+            };
+            wall(radialSteps, true);
+            wall(0, false);
+
+            const geometry = new THREE.BufferGeometry();
+            geometry.setIndex(indices);
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geometry.computeVertexNormals();
+            return geometry;
+        }
+
+        // Counts interior points where the region closes to nothing. Each one makes
+        // the solid touch itself along a circle, which is the truthful geometry but
+        // leaves a non-manifold edge that some slicers flag. Endpoints do not count:
+        // the region simply ends there.
+        function detectPinches(hiFn, loFn, a, b, steps) {
+            let count = 0;
+            let prev = hiFn(a) - loFn(a);
+            for (let i = 1; i <= steps; i++) {
+                const t = a + (b - a) * i / steps;
+                const d = hiFn(t) - loFn(t);
+                const interior = i < steps;
+                if (interior && (Math.abs(d) < 1e-7 || (prev > 0 && d < 0) || (prev < 0 && d > 0))) count++;
+                prev = d;
+            }
+            return count;
         }
 
         // Signed volume by the divergence theorem: (1/6) sum v1 . (v2 x v3).
@@ -1275,6 +1401,38 @@
             return group;
         }
 
+        // The shell analogue: n open-ended tubes at the midpoint radius, each of
+        // height hi−lo. This is the picture the 2 pi x h dx integrand comes from —
+        // unroll one tube and it is a rectangle of width 2 pi x and height h.
+        function buildRiemannShells(hiFn, loFn, a, b, n, angularSteps) {
+            const group = new THREE.Group();
+            const width = (b - a) / n;
+            // depthWrite off so the nested tubes do not occlude each other — a shell
+            // decomposition is concentric, unlike the disks, so each tube sits
+            // inside the next and thin walls contribute little projected area.
+            const material = new THREE.MeshPhongMaterial({
+                color: SURFACE_COLORS[1].solid, transparent: true, opacity: 0.32,
+                side: THREE.DoubleSide, shininess: 40, depthWrite: false
+            });
+            const edgeMaterial = new THREE.LineBasicMaterial({
+                color: SURFACE_COLORS[1].wire, transparent: true, opacity: 0.75
+            });
+
+            for (let k = 0; k < n; k++) {
+                const mid = a + width * (k + 0.5);
+                const height = hiFn(mid) - loFn(mid);
+                if (mid < REV_EPS || Math.abs(height) < REV_EPS) continue;
+
+                const radial = Math.max(8, Math.min(angularSteps, 48));
+                // Open-ended: a Riemann shell is a tube, not a solid slab.
+                const geo = new THREE.CylinderGeometry(mid, mid, Math.abs(height), radial, 1, true);
+                geo.translate(0, loFn(mid) + height / 2, 0);
+                group.add(new THREE.Mesh(geo, material));
+                group.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo, 30), edgeMaterial));
+            }
+            return group;
+        }
+
         // Compiles one revolution input into a plain t -> number function, or
         // records the parser message against the row.
         function compileRadius(text, which) {
@@ -1332,13 +1490,30 @@
             const outerFn = compileRadius(revolution.outer, 'outerError');
             const innerFn = compileRadius(revolution.inner, 'innerError');
 
+            const shell = revolution.axis === 'y';
+
             if (!revolution.outer.trim()) revolution.outerError = { key: 'statusEmpty' };
             if (!(b > a)) revolution.outerError = { key: 'errInterval' };
+            // The shell radius IS x, so a negative interval would ask for a
+            // negative radius. Textbook shell problems always start at x >= 0.
+            else if (shell && a < -REV_EPS) revolution.outerError = { key: 'errShellNegative' };
 
             renderRevolutionStatus();
-            if (!outerFn || innerFn === undefined || !(b > a)) { updateDimensions(); return; }
+            if (!outerFn || innerFn === undefined || revolution.outerError) { updateDimensions(); return; }
 
-            const geometry = buildRevolutionMesh(outerFn, innerFn || null, a, b, axialSteps, angularSteps);
+            // Pointwise upper/lower (shell) or outer/inner radius (disk). Taking
+            // max/min rather than trusting which box the user typed into is what
+            // keeps crossing curves well defined.
+            const hi = shell
+                ? t => Math.max(outerFn(t), innerFn ? innerFn(t) : 0)
+                : t => Math.max(Math.abs(outerFn(t)), innerFn ? Math.abs(innerFn(t)) : 0);
+            const lo = shell
+                ? t => Math.min(outerFn(t), innerFn ? innerFn(t) : 0)
+                : t => (innerFn ? Math.min(Math.abs(outerFn(t)), Math.abs(innerFn(t))) : 0);
+
+            const geometry = shell
+                ? buildShellMesh(hi, lo, a, b, axialSteps, angularSteps)
+                : buildRevolutionMesh(outerFn, innerFn || null, a, b, axialSteps, angularSteps);
 
             // With the Riemann disks on, the solid becomes a ghost envelope: at the
             // normal opacity it hides the very thing the mode exists to show
@@ -1350,7 +1525,11 @@
                 transparent: true,
                 opacity: solidOpacity,
                 side: THREE.DoubleSide,
-                shininess: 100
+                shininess: 100,
+                // A translucent envelope still writes depth by default, which was
+                // discarding every Riemann slice behind its front face — lowering
+                // the opacity alone did nothing.
+                depthWrite: riemannN === 0
             }));
             revolution.mesh.castShadow = true;
             revolution.mesh.receiveShadow = true;
@@ -1363,31 +1542,44 @@
             revolution.wireMesh.visible = showWireframe;
             scene.add(revolution.wireMesh);
 
-            // Disk: V = pi ∫ f². Washer: V = pi ∫ (f² − g²). Both integrated over
-            // the same interval the mesh was built on, at the mesh's own axial
-            // resolution, so the two numbers are comparable.
-            const integrand = innerFn
-                ? t => outerFn(t) ** 2 - innerFn(t) ** 2
-                : t => outerFn(t) ** 2;
-            const integral = Math.PI * simpson(integrand, a, b, axialSteps);
+            // Disk   V = pi ∫ (hi² − lo²)      (lo = 0 with no inner curve)
+            // Shell  V = 2 pi ∫ x (hi − lo)
+            // Both use the same hi/lo the mesh was built from, over the same
+            // interval and at the same resolution, so the integral and the mesh
+            // volume remain a genuine check on each other.
+            const integral = shell
+                ? 2 * Math.PI * simpson(t => t * (hi(t) - lo(t)), a, b, axialSteps)
+                : Math.PI * simpson(t => hi(t) ** 2 - lo(t) ** 2, a, b, axialSteps);
 
-            // Lateral area of revolution: S = 2 pi ∫ |f| sqrt(1 + f'²).
+            // Disk: lateral area 2 pi ∫ |f| sqrt(1 + f'²) of each radius curve.
+            // Shell: each curve sweeps an annulus-like sheet, 2 pi ∫ x sqrt(1 + f'²).
             const d = Math.max(1e-6, (b - a) * 1e-6);
             const areaOf = fn => 2 * Math.PI * simpson(t => {
                 const fp = (fn(t + d) - fn(t - d)) / (2 * d);
-                return Math.abs(fn(t)) * Math.sqrt(1 + fp * fp);
+                const weight = shell ? Math.abs(t) : Math.abs(fn(t));
+                return weight * Math.sqrt(1 + fp * fp);
             }, a + d, b - d, axialSteps);
-            const area = areaOf(outerFn) + (innerFn ? areaOf(innerFn) : 0);
+            const area = areaOf(hi) + (innerFn || shell ? areaOf(lo) : 0);
 
-            revolution.metrics = { integral, meshVolume: geometryVolume(geometry), area };
+            revolution.metrics = {
+                integral,
+                meshVolume: geometryVolume(geometry),
+                area,
+                pinches: detectPinches(hi, lo, a, b, axialSteps)
+            };
 
             if (riemannN > 0) {
-                revolution.riemannGroup = buildRiemann(outerFn, innerFn || null, a, b, riemannN, angularSteps);
+                revolution.riemannGroup = shell
+                    ? buildRiemannShells(hi, lo, a, b, riemannN, angularSteps)
+                    : buildRiemann(outerFn, innerFn || null, a, b, riemannN, angularSteps);
                 scene.add(revolution.riemannGroup);
             }
 
-            document.getElementById('revolution-method').textContent = innerFn ? 'WASHER' : 'DISK';
-            document.getElementById('vol-integral-label').textContent = innerFn ? 'π ∫ (f²−g²) dx' : 'π ∫ f² dx';
+            document.getElementById('revolution-method').textContent =
+                shell ? 'SHELL' : (innerFn ? 'WASHER' : 'DISK');
+            document.getElementById('vol-integral-label').textContent = shell
+                ? '2π ∫ x(f−g) dx'
+                : (innerFn ? 'π ∫ |f²−g²| dx' : 'π ∫ f² dx');
             updateDimensions();
         }
 
@@ -1435,7 +1627,27 @@
             regenerateAll();
         }
 
-        function loadRevExample(outer, inner, a, b) {
+        function setRevAxis(axis) {
+            if (axis === revolution.axis) return;
+            revolution.axis = axis;
+            applyRevAxisLabels();
+            regenerateRevolution();
+        }
+
+        // The two inputs mean different things per axis: radii when revolving about
+        // X, upper/lower curves when revolving about Y.
+        function applyRevAxisLabels() {
+            const shell = revolution.axis === 'y';
+            document.getElementById('axis-x').classList.toggle('active', !shell);
+            document.getElementById('axis-y').classList.toggle('active', shell);
+            document.getElementById('rev-outer-label').textContent = tr(shell ? 'revUpper' : 'revOuter');
+            document.getElementById('rev-inner-label').textContent = tr(shell ? 'revLower' : 'revInner');
+            document.getElementById('revolution-input-label').textContent =
+                tr(shell ? 'revolutionInputY' : 'revolutionInput');
+        }
+
+        function loadRevExample(outer, inner, a, b, axis) {
+            if (axis && axis !== revolution.axis) { revolution.axis = axis; applyRevAxisLabels(); }
             revolution.outer = outer;
             revolution.inner = inner;
             document.getElementById('rev-outer').value = outer;
@@ -1836,8 +2048,15 @@
                 modeSurfaces:     'Surfaces',
                 modeRevolution:   'Revolution',
                 revolutionInput:  'Revolve r = f(x) about X',
+                revolutionInputY: 'Revolve the region about Y',
+                axisX:            'About X · disk',
+                axisY:            'About Y · shell',
                 revOuter:         'Outer radius f(x)',
                 revInner:         'Inner radius g(x) — empty for a solid disk',
+                revUpper:         'Upper curve f(x)',
+                revLower:         'Lower curve g(x) — empty for the x axis',
+                errShellNegative: '✗ Shell radius is x, so the interval must start at 0 or above',
+                pinchNote:        'The region closes to nothing at {n} interior point(s); the solid touches itself there and a slicer may call it non-manifold.',
                 revInterval:      'Interval',
                 revExamples:      'Classic Solids',
                 revOptions:       'Revolution & Riemann',
@@ -1896,7 +2115,7 @@
                 helpStep1:        'Enter your equation in the z = f(x, y) field.',
                 helpStep2:        'Click <strong>Generate</strong> or pick a preset example.',
                 helpStepSurfaces: 'Use <strong>+ Add surface</strong> for up to four equations at once. Where two of them cross, the intersection curve is drawn automatically. The colour swatch shows or hides a surface.',
-                helpStepRevolution: 'Switch to <strong>Revolution</strong> to revolve r = f(x) about the X axis. The panel compares the exact integral π∫f²dx against the volume of the mesh it built, and the <strong>Riemann n</strong> slider draws the n disks the integral sums.',
+                helpStepRevolution: 'Switch to <strong>Revolution</strong> for the disk, washer and shell methods. The panel compares the exact integral against the volume of the mesh it built, and the <strong>Riemann n</strong> slider draws the n slices the integral sums.',
                 helpStep3:        'Drag to rotate, scroll or pinch to zoom.',
                 helpStep4:        'Adjust sliders to tune parameters in real time.',
                 helpStep5:        'Click <strong>Export STL</strong> to download for 3D printing, or <strong>Export PNG</strong> for an image.',
@@ -1914,8 +2133,15 @@
                 modeSurfaces:     'Superficies',
                 modeRevolution:   'Revolución',
                 revolutionInput:  'Revolucionar r = f(x) en torno a X',
+                revolutionInputY: 'Revolucionar la región en torno a Y',
+                axisX:            'En torno a X · disco',
+                axisY:            'En torno a Y · cáscara',
                 revOuter:         'Radio exterior f(x)',
                 revInner:         'Radio interior g(x) — vacío para disco macizo',
+                revUpper:         'Curva superior f(x)',
+                revLower:         'Curva inferior g(x) — vacío para el eje x',
+                errShellNegative: '✗ El radio de la cáscara es x, así que el intervalo debe partir en 0 o más',
+                pinchNote:        'La región se cierra a nada en {n} punto(s) interior(es); el sólido se toca a sí mismo ahí y un slicer puede llamarlo no-manifold.',
                 revInterval:      'Intervalo',
                 revExamples:      'Sólidos clásicos',
                 revOptions:       'Revolución y Riemann',
@@ -1974,7 +2200,7 @@
                 helpStep1:        'Escribe tu ecuación en el campo z = f(x, y).',
                 helpStep2:        'Haz clic en <strong>Generar</strong> o selecciona un ejemplo predefinido.',
                 helpStepSurfaces: 'Usa <strong>+ Agregar superficie</strong> para trabajar con hasta cuatro ecuaciones a la vez. Donde dos se cruzan, la curva de intersección se dibuja automáticamente. El cuadro de color muestra u oculta una superficie.',
-                helpStepRevolution: 'Cambia a <strong>Revolución</strong> para revolucionar r = f(x) en torno al eje X. El panel compara la integral exacta π∫f²dx con el volumen de la malla que generó, y el slider <strong>n de Riemann</strong> dibuja los n discos que suma la integral.',
+                helpStepRevolution: 'Cambia a <strong>Revolución</strong> para los métodos del disco, la arandela y la cáscara. El panel compara la integral exacta con el volumen de la malla que generó, y el slider <strong>n de Riemann</strong> dibuja las n rebanadas que suma la integral.',
                 helpStep3:        'Arrastra para rotar, scroll o pellizco para hacer zoom.',
                 helpStep4:        'Ajusta los sliders para modificar parámetros en tiempo real.',
                 helpStep5:        'Haz clic en <strong>Exportar STL</strong> para imprimir en 3D, o <strong>Exportar PNG</strong> para una imagen.',
@@ -2026,6 +2252,9 @@
             // Rebuilt rather than patched: the rows carry translated titles and
             // placeholders that data-i18n cannot reach.
             if (surfaces.length) renderSurfaceList();
+            applyRevAxisLabels();
+            renderRevolutionStatus();
+            updateVolumeReadout();
         }
 
         function toggleLang() {

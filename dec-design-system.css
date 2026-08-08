@@ -201,6 +201,19 @@ body {
 }
 
 /* ---- REVOLUTION PANEL ---- */
+.axis-switch { padding: 0 0 0.6rem; }
+.axis-switch .mode-btn { font-size: 0.66rem; padding: 0.3rem 0.4rem; }
+
+#pinch-note {
+    margin-top: 0.35rem;
+    max-width: 22rem;
+    font-size: 0.62rem;
+    line-height: 1.45;
+    color: var(--dec-orange-dark);
+}
+
+#pinch-note[hidden] { display: none; }
+
 .rev-label {
     display: block;
     font-family: var(--font-mono);

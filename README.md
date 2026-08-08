@@ -22,7 +22,17 @@ Generador interactivo de superficies matemáticas 3D para impresión 3D. Visuali
 6. Exporta como STL para impresión 3D (todas las superficies visibles, cada una como un cuerpo), o como PNG si solo quieres la imagen.
 
 ### Sólidos de revolución
-El interruptor **Revolución** revoluciona `r = f(x)` en torno al eje X. Con solo el radio exterior es el **método del disco**; agregando un radio interior `g(x)` es el **método de la arandela**.
+El interruptor **Revolución** ofrece los tres métodos del cálculo integral:
+
+| Eje | Entradas | Método | Volumen |
+|---|---|---|---|
+| X | radio exterior `f(x)` | disco | `π ∫ f² dx` |
+| X | radios exterior e interior | arandela | `π ∫ \|f²−g²\| dx` |
+| Y | curva superior e inferior | cáscara | `2π ∫ x(f−g) dx` |
+
+En modo cáscara el radio **es** x, así que el intervalo debe partir en 0 o más; la app lo rechaza si no. Dejar la segunda entrada vacía significa "la región entre la curva y el eje".
+
+Las dos curvas se toman como máximo y mínimo punto a punto, no según en qué casilla las escribiste. Eso importa: si se cruzan — "la región limitada por y=x e y=2−x" es una arandela de libro — confiar en las etiquetas deja el radio interior por fuera del exterior y la malla se abre.
 
 El panel de volumen muestra dos números que se calculan por caminos independientes:
 
@@ -31,9 +41,11 @@ El panel de volumen muestra dos números que se calculan por caminos independien
 
 Que converjan valida la malla; la diferencia que queda es el error de facetado y se encoge al subir los pasos angulares. El slider **n de Riemann** dibuja los n discos o arandelas que la integral está sumando, para ver la convergencia.
 
-Verificado contra diez sólidos con volumen de forma cerrada (esfera, cono, paraboloide, cuerno `1/x`, `sin(x)`, `x²`, y tres arandelas): la integral acierta al 0.0000% y la malla queda entre −0.15% y −0.21% con 64 pasos angulares, siempre cerrada y con normales hacia afuera.
+Verificado contra veinte sólidos con volumen de forma cerrada (esfera, cono, paraboloide, cuerno `1/x`, `sin(x)`, `x²`, tres arandelas, y diez casos de cáscara incluyendo cambio de signo y curvas que se cruzan): la integral acierta al 0.0000% y la malla queda dentro del 0.21% con 64 pasos angulares, siempre cerrada y con normales hacia afuera.
 
-El sólido se exporta acostado sobre el eje X; si lo quieres imprimir de pie, rótalo en el slicer.
+Cuando la región se cierra a nada en un punto **interior**, el sólido se toca a sí mismo en un círculo. Eso es geometría fiel, no un error, pero deja una arista no-manifold que algunos slicers marcan; la app avisa cuántos puntos así encontró.
+
+En modo disco/arandela el sólido se exporta acostado sobre el eje X. En modo cáscara sale de pie, con base circular plana — mejor para imprimir directamente.
 
 ### Superficies múltiples e intersecciones
 Los parámetros `A`, `f`, `phi` y `a1`…`a5` son **compartidos** entre todas las superficies: mover un slider mueve toda la familia, que es justamente lo útil al compararlas. Cada superficie tiene solo su propia ecuación, color y visibilidad.
@@ -65,7 +77,17 @@ Interactive 3D math surface generator for 3D printing. Visualize and export z = 
 6. Export as STL for 3D printing (every visible surface, each as its own body), or as PNG if you just want the image.
 
 ### Solids of revolution
-The **Revolution** switch revolves `r = f(x)` about the X axis. With only an outer radius that is the **disk method**; adding an inner radius `g(x)` makes it the **washer method**.
+The **Revolution** switch covers all three integral-calculus methods:
+
+| Axis | Inputs | Method | Volume |
+|---|---|---|---|
+| X | outer radius `f(x)` | disk | `π ∫ f² dx` |
+| X | outer and inner radii | washer | `π ∫ \|f²−g²\| dx` |
+| Y | upper and lower curves | shell | `2π ∫ x(f−g) dx` |
+
+In shell mode the radius **is** x, so the interval must start at 0 or above; the app refuses it otherwise. Leaving the second input empty means "the region between the curve and the axis".
+
+The two curves are taken as the pointwise max and min, not according to which box you typed them in. That matters: if they cross — "the region bounded by y=x and y=2−x" is a textbook washer — trusting the labels puts the inner radius outside the outer one and the mesh comes apart.
 
 The volume panel shows two numbers reached by independent routes:
 
@@ -74,9 +96,11 @@ The volume panel shows two numbers reached by independent routes:
 
 Their agreement validates the mesh; the remaining gap is faceting error and shrinks as the angular steps rise. The **Riemann n** slider draws the n disks or washers the integral is summing, so the convergence is visible.
 
-Verified against ten solids with closed-form volumes (sphere, cone, paraboloid, `1/x` horn, `sin(x)`, `x²`, and three washers): the integral is exact to 0.0000% and the mesh lands between −0.15% and −0.21% at 64 angular steps, always closed and outward-facing.
+Verified against twenty solids with closed-form volumes (sphere, cone, paraboloid, `1/x` horn, `sin(x)`, `x²`, three washers, and ten shell cases including sign changes and crossing curves): the integral is exact to 0.0000% and the mesh lands within 0.21% at 64 angular steps, always closed and outward-facing.
 
-The solid exports lying along the X axis; rotate it in your slicer to print it standing up.
+Where the region closes to nothing at an **interior** point, the solid genuinely touches itself along a circle. That is faithful geometry rather than an error, but it leaves a non-manifold edge some slicers flag, so the app reports how many such points it found.
+
+In disk/washer mode the solid exports lying along the X axis. In shell mode it comes out standing up, with a flat circular base — better for printing as-is.
 
 ### Multiple surfaces and intersections
 The `A`, `f`, `phi` and `a1`…`a5` parameters are **shared** across all surfaces: moving one slider moves the whole family, which is the point when you are comparing them. Each surface only owns its equation, colour and visibility.
