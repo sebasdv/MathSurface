@@ -21,6 +21,19 @@ Generador interactivo de superficies matemáticas 3D para impresión 3D. Visuali
 5. Arrastra para rotar, scroll o pellizco para hacer zoom. El botón ⏸ del encabezado pausa la rotación automática.
 6. Exporta como STL para impresión 3D (todas las superficies visibles, cada una como un cuerpo), o como PNG si solo quieres la imagen.
 
+### Controles por modo
+Cada modo muestra solo los controles que realmente lee, para que no haya sliders que no hagan nada:
+
+| Control | Superficies | Revolución |
+|---|---|---|
+| Resolución | sí | no — usa pasos axiales/angulares |
+| Escala Z | sí | no se aplica a un radio |
+| Grosor, cara inferior, intersecciones | sí | no |
+| Intervalo, Riemann, panel de volumen | no | sí |
+| `A`, `f`, `φ`, `a1`…`a5`, opacidad, mm/unidad | sí | sí |
+
+Los coeficientes `a1`…`a5` son parámetros reales en ambos modos, así que se quedan visibles; lo que cambia son sus etiquetas — el sufijo `· x³` / `· y³` describe el polinomio por defecto de superficies, no los coeficientes en sí. En revolución aparecen como `a1`…`a5` a secas, porque las ecuaciones ahí solo aceptan `x`. El slider de rango pasa a llamarse "rango de grilla" en revolución, que es lo único que hace ahí.
+
 ### Sólidos de revolución
 El interruptor **Revolución** ofrece los tres métodos del cálculo integral:
 
@@ -87,6 +100,19 @@ Interactive 3D math surface generator for 3D printing. Visualize and export z = 
 4. "+ Add surface" plots up to four equations at once. Where two of them cross, the **intersection curve** is drawn automatically.
 5. Drag to rotate, scroll or pinch to zoom. The ⏸ button in the header pauses the auto-rotation.
 6. Export as STL for 3D printing (every visible surface, each as its own body), or as PNG if you just want the image.
+
+### Mode-specific controls
+Each mode shows only the controls it actually reads, so no slider sits there doing nothing:
+
+| Control | Surfaces | Revolution |
+|---|---|---|
+| Resolution | yes | no — uses axial/angular steps |
+| Z scale | yes | not applied to a radius |
+| Thickness, underside, intersections | yes | no |
+| Interval, Riemann, volume panel | no | yes |
+| `A`, `f`, `φ`, `a1`…`a5`, opacity, mm/unit | yes | yes |
+
+The `a1`…`a5` coefficients are real parameters in both modes, so they stay visible; what changes is their labels — the `· x³` / `· y³` suffix describes the default surface polynomial, not the coefficients themselves. In revolution they read as plain `a1`…`a5`, because equations there take only `x`. The range slider becomes "grid range" in revolution, which is all it does there.
 
 ### Solids of revolution
 The **Revolution** switch covers all three integral-calculus methods:

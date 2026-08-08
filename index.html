@@ -205,35 +205,36 @@
                     <!-- Polynomial Parameters -->
                     <div class="accordion-item">
                         <button class="accordion-header active" onclick="toggleAccordion('function-params')">
-                            <span data-i18n="polynomial">Polynomial f(x,y)</span>
+                            <span id="coeff-header" data-i18n="polynomial">Polynomial f(x,y)</span>
                         </button>
                         <div class="accordion-content active" id="function-params-accordion">
                             <div class="accordion-body">
                                 <div class="param-slider-inline">
-                                    <label>a1 · x³</label>
+                                    <label id="a1-label">a1 · x³</label>
                                     <input type="range" id="a1" min="-1" max="1" step="0.01" value="-0.25">
                                     <span class="param-value" id="a1-value">-0.25</span>
                                 </div>
                                 <div class="param-slider-inline">
-                                    <label>a2 · y³</label>
+                                    <label id="a2-label">a2 · y³</label>
                                     <input type="range" id="a2" min="-1" max="1" step="0.01" value="-0.25">
                                     <span class="param-value" id="a2-value">-0.25</span>
                                 </div>
                                 <div class="param-slider-inline">
-                                    <label>a3 · x²</label>
+                                    <label id="a3-label">a3 · x²</label>
                                     <input type="range" id="a3" min="-1" max="1" step="0.01" value="0.5">
                                     <span class="param-value" id="a3-value">0.50</span>
                                 </div>
                                 <div class="param-slider-inline">
-                                    <label>a4 · y²</label>
+                                    <label id="a4-label">a4 · y²</label>
                                     <input type="range" id="a4" min="-1" max="1" step="0.01" value="0.5">
                                     <span class="param-value" id="a4-value">0.50</span>
                                 </div>
                                 <div class="param-slider-inline">
-                                    <label>a5 · x²y²</label>
+                                    <label id="a5-label">a5 · x²y²</label>
                                     <input type="range" id="a5" min="-1" max="1" step="0.01" value="-0.25">
                                     <span class="param-value" id="a5-value">-0.25</span>
                                 </div>
+                                <p class="rev-hint" id="coeff-hint" hidden data-i18n="coeffHintRev">Plain coefficients here — the x³/y³ labels belong to the default surface polynomial. Revolution equations take only <code>x</code>.</p>
                             </div>
                         </div>
                     </div>
@@ -245,13 +246,13 @@
                         </button>
                         <div class="accordion-content" id="viz-controls-accordion">
                             <div class="accordion-body">
-                                <div class="param-slider-inline">
+                                <div class="param-slider-inline" id="resolution-row">
                                     <label data-i18n="resolution">Resolution</label>
                                     <input type="range" id="resolution" min="20" max="100" value="50">
                                     <span class="param-value" id="resolution-value">50</span>
                                 </div>
                                 <div class="param-slider-inline">
-                                    <label data-i18n="range">Range</label>
+                                    <label id="range-label" data-i18n="range">Range</label>
                                     <input type="range" id="range" min="1" max="10" value="4">
                                     <span class="param-value" id="range-value">4</span>
                                 </div>
@@ -268,7 +269,7 @@
                                     <input type="range" id="thickness" min="0.1" max="2" step="0.1" value="0.3">
                                     <span class="param-value" id="thickness-value">0.3</span>
                                 </div>
-                                <div class="param-slider-inline">
+                                <div class="param-slider-inline" id="zscale-row">
                                     <label data-i18n="zScale">Z Scale</label>
                                     <input type="range" id="zScale" min="0.1" max="3" step="0.1" value="1">
                                     <span class="param-value" id="zScale-value">1.0</span>
@@ -1725,11 +1726,44 @@
             document.getElementById('volume-block').hidden = mode !== 'revolution';
             // A solid of revolution is already solid, and the intersection curves
             // are built on heightfield samples that do not exist in this mode.
-            document.getElementById('thickness-row').hidden = mode !== 'surfaces';
-            document.getElementById('intersections-row').hidden = mode !== 'surfaces';
-            document.getElementById('base-row').hidden = mode !== 'surfaces';
-
+            applyModeControls();
             regenerateAll();
+        }
+
+        // Hides the controls a mode never reads, and relabels the ones whose
+        // meaning changes. Without this the Visualization panel showed sliders
+        // that quietly did nothing in revolution mode: `resolution` is replaced
+        // there by the axial/angular pair, and `zScale` is not applied to a radius
+        // at all. `range` survives in both but only drives the reference grid once
+        // the interval is set separately, so it says so.
+        function applyModeControls() {
+            const surf = appMode === 'surfaces';
+
+            // Panels that belong to exactly one mode.
+            document.getElementById('surfaces-panel').hidden = !surf;
+            document.getElementById('revolution-panel').hidden = surf;
+            document.getElementById('examples-item').hidden = !surf;
+            document.getElementById('rev-examples-item').hidden = surf;
+            document.getElementById('rev-options-item').hidden = surf;
+            document.getElementById('volume-block').hidden = surf;
+
+            // Rows only the surfaces path reads.
+            for (const id of ['thickness-row', 'intersections-row', 'base-row',
+                              'resolution-row', 'zscale-row']) {
+                document.getElementById(id).hidden = !surf;
+            }
+
+            // The a1..a5 term labels describe the default surface polynomial; in
+            // revolution mode they are just coefficients, and only x is in scope.
+            document.getElementById('coeff-header').textContent =
+                tr(surf ? 'polynomial' : 'coefficients');
+            const terms = ['x³', 'y³', 'x²', 'y²', 'x²y²'];
+            for (let k = 0; k < 5; k++) {
+                document.getElementById(`a${k + 1}-label`).textContent =
+                    surf ? `a${k + 1} · ${terms[k]}` : `a${k + 1}`;
+            }
+            document.getElementById('coeff-hint').hidden = surf;
+            document.getElementById('range-label').textContent = tr(surf ? 'range' : 'gridRange');
         }
 
         function setBaseMode(mode) {
@@ -2202,9 +2236,12 @@
                 phase:            'Phase',
                 autoUpdate:       'Auto-update',
                 polynomial:       'Polynomial f(x,y)',
+                coefficients:     'Coefficients a1…a5',
+                coeffHintRev:     'Plain coefficients here — the x³/y³ labels belong to the default surface polynomial. Revolution equations take only <code>x</code>.',
                 visualization:    'Visualization',
                 resolution:       'Resolution',
                 range:            'Range',
+                gridRange:        'Grid range',
                 thickness:        'Thickness',
                 zScale:           'Z Scale',
                 opacity:          'Opacity',
@@ -2292,9 +2329,12 @@
                 phase:            'Fase',
                 autoUpdate:       'Auto-actualizar',
                 polynomial:       'Polinomio f(x,y)',
+                coefficients:     'Coeficientes a1…a5',
+                coeffHintRev:     'Aquí son coeficientes sueltos — las etiquetas x³/y³ pertenecen al polinomio por defecto de superficies. Las ecuaciones de revolución solo aceptan <code>x</code>.',
                 visualization:    'Visualización',
                 resolution:       'Resolución',
                 range:            'Rango',
+                gridRange:        'Rango de grilla',
                 thickness:        'Grosor',
                 zScale:           'Escala Z',
                 opacity:          'Opacidad',
@@ -2376,6 +2416,7 @@
             // placeholders that data-i18n cannot reach.
             if (surfaces.length) renderSurfaceList();
             applyRevAxisLabels();
+            applyModeControls();
             renderRevolutionStatus();
             updateVolumeReadout();
         }

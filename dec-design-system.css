@@ -32,6 +32,12 @@
     padding: 0;
 }
 
+/* The UA rule for [hidden] is `display: none` at the lowest specificity, so any
+   class here that sets `display` silently defeats it — which is exactly what
+   happened to the mode-specific rows: `.param-slider-inline { display: flex }`
+   kept them on screen while JS believed they were hidden. */
+[hidden] { display: none !important; }
+
 body {
     font-family: var(--font-sans);
     background-color: var(--dec-dark-bg);
@@ -212,10 +218,8 @@ body {
     color: var(--dec-orange-dark);
 }
 
-#pinch-note[hidden] { display: none; }
 
 #base-row { margin-bottom: 0.6rem; }
-#base-row[hidden] { display: none; }
 
 #base-warning {
     margin-top: 0.15rem;
@@ -224,7 +228,6 @@ body {
     color: var(--dec-orange-dark);
 }
 
-#base-warning[hidden] { display: none; }
 
 .rev-label {
     display: block;
@@ -706,4 +709,3 @@ body {
 }
 
 #volume-block .dim-label { text-transform: none; letter-spacing: 0; }
-#volume-block[hidden] { display: none; }
