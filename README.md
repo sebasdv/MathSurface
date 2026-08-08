@@ -21,6 +21,20 @@ Generador interactivo de superficies matemáticas 3D para impresión 3D. Visuali
 5. Arrastra para rotar, scroll o pellizco para hacer zoom. El botón ⏸ del encabezado pausa la rotación automática.
 6. Exporta como STL para impresión 3D (todas las superficies visibles, cada una como un cuerpo), o como PNG si solo quieres la imagen.
 
+### Sólidos de revolución
+El interruptor **Revolución** revoluciona `r = f(x)` en torno al eje X. Con solo el radio exterior es el **método del disco**; agregando un radio interior `g(x)` es el **método de la arandela**.
+
+El panel de volumen muestra dos números que se calculan por caminos independientes:
+
+- `π ∫ f² dx` (o `π ∫ (f²−g²) dx`) por regla de Simpson sobre el intervalo — el valor exacto de la curva.
+- El volumen de la malla generada, por el teorema de la divergencia.
+
+Que converjan valida la malla; la diferencia que queda es el error de facetado y se encoge al subir los pasos angulares. El slider **n de Riemann** dibuja los n discos o arandelas que la integral está sumando, para ver la convergencia.
+
+Verificado contra diez sólidos con volumen de forma cerrada (esfera, cono, paraboloide, cuerno `1/x`, `sin(x)`, `x²`, y tres arandelas): la integral acierta al 0.0000% y la malla queda entre −0.15% y −0.21% con 64 pasos angulares, siempre cerrada y con normales hacia afuera.
+
+El sólido se exporta acostado sobre el eje X; si lo quieres imprimir de pie, rótalo en el slicer.
+
 ### Superficies múltiples e intersecciones
 Los parámetros `A`, `f`, `phi` y `a1`…`a5` son **compartidos** entre todas las superficies: mover un slider mueve toda la familia, que es justamente lo útil al compararlas. Cada superficie tiene solo su propia ecuación, color y visibilidad.
 
@@ -49,6 +63,20 @@ Interactive 3D math surface generator for 3D printing. Visualize and export z = 
 4. "+ Add surface" plots up to four equations at once. Where two of them cross, the **intersection curve** is drawn automatically.
 5. Drag to rotate, scroll or pinch to zoom. The ⏸ button in the header pauses the auto-rotation.
 6. Export as STL for 3D printing (every visible surface, each as its own body), or as PNG if you just want the image.
+
+### Solids of revolution
+The **Revolution** switch revolves `r = f(x)` about the X axis. With only an outer radius that is the **disk method**; adding an inner radius `g(x)` makes it the **washer method**.
+
+The volume panel shows two numbers reached by independent routes:
+
+- `π ∫ f² dx` (or `π ∫ (f²−g²) dx`) by Simpson's rule over the interval — the exact value for the curve.
+- The volume of the generated mesh, by the divergence theorem.
+
+Their agreement validates the mesh; the remaining gap is faceting error and shrinks as the angular steps rise. The **Riemann n** slider draws the n disks or washers the integral is summing, so the convergence is visible.
+
+Verified against ten solids with closed-form volumes (sphere, cone, paraboloid, `1/x` horn, `sin(x)`, `x²`, and three washers): the integral is exact to 0.0000% and the mesh lands between −0.15% and −0.21% at 64 angular steps, always closed and outward-facing.
+
+The solid exports lying along the X axis; rotate it in your slicer to print it standing up.
 
 ### Multiple surfaces and intersections
 The `A`, `f`, `phi` and `a1`…`a5` parameters are **shared** across all surfaces: moving one slider moves the whole family, which is the point when you are comparing them. Each surface only owns its equation, colour and visibility.

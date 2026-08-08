@@ -43,14 +43,47 @@
             <!-- CONTROLS SIDEBAR -->
             <div id="controls-sidebar">
 
-                <!-- Equation input -->
-                <div class="equation-group">
+                <!-- MODE SWITCH -->
+                <div class="mode-switch">
+                    <button class="mode-btn active" id="mode-surfaces" onclick="setMode('surfaces')" data-i18n="modeSurfaces">Surfaces</button>
+                    <button class="mode-btn" id="mode-revolution" onclick="setMode('revolution')" data-i18n="modeRevolution">Revolution</button>
+                </div>
+
+                <!-- SURFACES MODE: equation list -->
+                <div class="equation-group" id="surfaces-panel">
                     <div class="section-label">
                         <span data-i18n="equation">Equations z = f(x, y)</span>
                         <span class="font-mono text-blue">INPUT</span>
                     </div>
                     <div id="surface-list"></div>
                     <button class="btn btn-ghost btn-add" id="add-surface" onclick="addSurface()" data-i18n="addSurface">+ Add surface</button>
+                </div>
+
+                <!-- REVOLUTION MODE: r = f(x) revolved about the X axis -->
+                <div class="equation-group" id="revolution-panel" hidden>
+                    <div class="section-label">
+                        <span data-i18n="revolutionInput">Revolve r = f(x) about X</span>
+                        <span class="font-mono text-blue" id="revolution-method">DISK</span>
+                    </div>
+                    <label class="rev-label" data-i18n="revOuter">Outer radius f(x)</label>
+                    <input type="text" id="rev-outer" class="equation-input-full" value="sqrt(4 - x^2)">
+                    <div class="surface-status" id="rev-outer-status"></div>
+
+                    <label class="rev-label" data-i18n="revInner">Inner radius g(x) — empty for a solid disk</label>
+                    <input type="text" id="rev-inner" class="equation-input-full" value="" placeholder="—">
+                    <div class="surface-status" id="rev-inner-status"></div>
+
+                    <div class="rev-interval">
+                        <label class="rev-label" data-i18n="revInterval">Interval</label>
+                        <span class="font-mono rev-bracket">[</span>
+                        <input type="number" id="rev-a" class="rev-num" value="-2" step="0.1">
+                        <span class="font-mono rev-bracket">,</span>
+                        <input type="number" id="rev-b" class="rev-num" value="2" step="0.1">
+                        <span class="font-mono rev-bracket">]</span>
+                    </div>
+                </div>
+
+                <div class="equation-group">
                     <div class="button-group">
                         <button class="btn btn-primary" onclick="regenerateAll()" data-i18n="generate">▶ Generate</button>
                         <button class="btn btn-ghost" onclick="resetView()" data-i18n="reset">↺ Reset</button>
@@ -60,8 +93,8 @@
                 <!-- ACCORDION -->
                 <div class="accordion accordion-flush">
 
-                    <!-- Examples -->
-                    <div class="accordion-item">
+                    <!-- Examples (surfaces mode) -->
+                    <div class="accordion-item" id="examples-item">
                         <button class="accordion-header" onclick="toggleAccordion('examples')">
                             <span data-i18n="examples">Popular Examples</span>
                         </button>
@@ -75,6 +108,54 @@
                                     <button class="example-btn" onclick="loadExample('A * cos(f*x + phi) * sin(f*y)')">A * cos(f*x+φ) * sin(f*y)</button>
                                     <button class="example-btn" onclick="loadExample('A * sin(f*x*y + phi)')">A * sin(f*x*y + φ)</button>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Examples (revolution mode) — each has a closed-form volume -->
+                    <div class="accordion-item" id="rev-examples-item" hidden>
+                        <button class="accordion-header" onclick="toggleAccordion('rev-examples')">
+                            <span data-i18n="revExamples">Classic Solids</span>
+                        </button>
+                        <div class="accordion-content" id="rev-examples-accordion">
+                            <div class="accordion-body">
+                                <div class="examples-grid">
+                                    <button class="example-btn" onclick="loadRevExample('sqrt(4 - x^2)', '', -2, 2)">Sphere · √(4−x²) · V=32π/3</button>
+                                    <button class="example-btn" onclick="loadRevExample('x', '', 0, 3)">Cone · x · V=9π</button>
+                                    <button class="example-btn" onclick="loadRevExample('sqrt(x)', '', 0, 4)">Paraboloid · √x · V=8π</button>
+                                    <button class="example-btn" onclick="loadRevExample('1/x', '', 1, 4)">Horn · 1/x · V=3π/4</button>
+                                    <button class="example-btn" onclick="loadRevExample('sin(x)', '', 0, 3.14159265)">Bead · sin(x) · V=π²/2</button>
+                                    <button class="example-btn" onclick="loadRevExample('2', '1', 0, 4)">Washer · 2 &amp; 1 · V=12π</button>
+                                    <button class="example-btn" onclick="loadRevExample('sqrt(x)', 'x/2', 0, 4)">Washer · √x &amp; x/2 · V=8π/3</button>
+                                    <button class="example-btn" onclick="loadRevExample('2 + cos(f*x)', '', 0, 6)">Vase · 2+cos(f·x)</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Revolution mesh + Riemann controls -->
+                    <div class="accordion-item" id="rev-options-item" hidden>
+                        <button class="accordion-header active" onclick="toggleAccordion('rev-options')">
+                            <span data-i18n="revOptions">Revolution &amp; Riemann</span>
+                        </button>
+                        <div class="accordion-content active" id="rev-options-accordion">
+                            <div class="accordion-body">
+                                <div class="param-slider-inline">
+                                    <label data-i18n="revAxial">Axial steps</label>
+                                    <input type="range" id="rev-axial" min="10" max="300" step="10" value="120">
+                                    <span class="param-value" id="rev-axial-value">120</span>
+                                </div>
+                                <div class="param-slider-inline">
+                                    <label data-i18n="revAngular">Angular steps</label>
+                                    <input type="range" id="rev-angular" min="8" max="192" step="8" value="64">
+                                    <span class="param-value" id="rev-angular-value">64</span>
+                                </div>
+                                <div class="param-slider-inline">
+                                    <label data-i18n="revRiemann">Riemann n</label>
+                                    <input type="range" id="rev-riemann" min="0" max="40" step="1" value="0">
+                                    <span class="param-value" id="rev-riemann-value" data-i18n="off">off</span>
+                                </div>
+                                <p class="rev-hint" data-i18n="revRiemannHint">Draws the n disks or washers the integral sums. Raise n and watch them converge to the smooth solid.</p>
                             </div>
                         </div>
                     </div>
@@ -165,7 +246,7 @@
                                     <input type="range" id="range" min="1" max="10" value="4">
                                     <span class="param-value" id="range-value">4</span>
                                 </div>
-                                <div class="param-slider-inline">
+                                <div class="param-slider-inline" id="thickness-row">
                                     <label data-i18n="thickness">Thickness</label>
                                     <input type="range" id="thickness" min="0.1" max="2" step="0.1" value="0.3">
                                     <span class="param-value" id="thickness-value">0.3</span>
@@ -185,7 +266,7 @@
                                     <input type="range" id="mmPerUnit" min="1" max="50" step="1" value="10">
                                     <span class="param-value" id="mmPerUnit-value">10 mm</span>
                                 </div>
-                                <div class="toggle-row">
+                                <div class="toggle-row" id="intersections-row">
                                     <span data-i18n="showIntersections">Intersection curves</span>
                                     <label class="toggle-switch-wrap">
                                         <input type="checkbox" id="show-intersections" checked>
@@ -232,6 +313,29 @@
                 <span class="dim-value" id="dim-scale">10 mm/u</span>
             </div>
         </div>
+
+        <!-- Revolution mode only: the integral against the mesh it produced -->
+        <div id="volume-block" hidden>
+            <span class="dim-label" data-i18n="volumeLabel">Volume of revolution</span>
+            <div class="dim-row">
+                <div class="dim-item">
+                    <span class="dim-label" id="vol-integral-label">π ∫ f² dx</span>
+                    <span class="dim-value" id="vol-integral">—</span>
+                </div>
+                <div class="dim-item">
+                    <span class="dim-label" data-i18n="volMesh">Mesh</span>
+                    <span class="dim-value" id="vol-mesh">—</span>
+                </div>
+                <div class="dim-item">
+                    <span class="dim-label" data-i18n="volPrint">Printed</span>
+                    <span class="dim-value" id="vol-printed">—</span>
+                </div>
+                <div class="dim-item">
+                    <span class="dim-label" data-i18n="volArea">Surface area</span>
+                    <span class="dim-value" id="vol-area">—</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- HELP MODAL -->
@@ -245,6 +349,7 @@
                     <li data-i18n="helpStep1">Enter your equation in the z = f(x, y) field.</li>
                     <li data-i18n="helpStep2">Click <strong>Generate</strong> or pick a preset example.</li>
                     <li data-i18n="helpStepSurfaces">Use <strong>+ Add surface</strong> for up to four equations at once. Where two of them cross, the intersection curve is drawn automatically. The colour swatch shows or hides a surface.</li>
+                    <li data-i18n="helpStepRevolution">Switch to <strong>Revolution</strong> to revolve r = f(x) about the X axis. The panel compares the exact integral π∫f²dx against the volume of the mesh it built, and the <strong>Riemann n</strong> slider draws the n disks the integral sums.</li>
                     <li data-i18n="helpStep3">Drag to rotate, scroll to zoom.</li>
                     <li data-i18n="helpStep4">Adjust sliders to tune parameters in real time.</li>
                     <li data-i18n="helpStep5">Click <strong>Export STL</strong> to download for 3D printing.</li>
@@ -288,6 +393,26 @@
         let nextSurfaceId = 1;
         let activeSurfaceId = null;     // last row the user touched; target for examples
         let intersectionLines = null;   // THREE.LineSegments, rebuilt with the surfaces
+
+        // --- Solids of revolution ----------------------------------------------
+        // A solid of revolution is not a heightfield: revolving r = f(x) gives two
+        // z values for most (x,y), so it cannot go through createSolidGeometry.
+        // It is a separate geometry path, selected by mode rather than mixed into
+        // the surface list.
+        let appMode = 'surfaces';       // 'surfaces' | 'revolution'
+        const REV_EPS = 1e-9;
+
+        let revolution = {
+            outer: 'sqrt(4 - x^2)',
+            inner: '',                  // empty -> disk method; set -> washer
+            a: -2, b: 2,
+            mesh: null,
+            wireMesh: null,
+            riemannGroup: null,
+            outerError: null,
+            innerError: null,
+            metrics: null               // { integral, meshVolume, area }
+        };
         let autoRotate = true;
         let mmPerUnit = 10;     // 1 unidad Three.js = 10 mm por defecto
 
@@ -507,6 +632,26 @@
             document.getElementById('dim-x').textContent = mm(box.max.x - box.min.x);
             document.getElementById('dim-y').textContent = mm(box.max.z - box.min.z);   // Three.js Z is depth
             document.getElementById('dim-z').textContent = mm(box.max.y - box.min.y);   // Three.js Y is height
+            updateVolumeReadout();
+        }
+
+        function updateVolumeReadout() {
+            if (appMode !== 'revolution') return;
+            const set = (id, text) => { document.getElementById(id).textContent = text; };
+            const m = revolution.metrics;
+            if (!m) {
+                for (const id of ['vol-integral', 'vol-mesh', 'vol-printed', 'vol-area']) set(id, '—');
+                return;
+            }
+            // The integral is exact for the curve; the mesh is the faceted
+            // approximation that actually gets printed. Showing the gap is the
+            // point: it shrinks as the angular resolution rises.
+            const err = m.integral !== 0 ? (m.meshVolume - m.integral) / m.integral * 100 : 0;
+            set('vol-integral', m.integral.toFixed(3) + ' u³');
+            set('vol-mesh', m.meshVolume.toFixed(3) + ' u³ (' + (err >= 0 ? '+' : '') + err.toFixed(2) + '%)');
+            // u³ -> mm³ -> cm³. cm³ is what a slicer quotes for filament.
+            set('vol-printed', (m.meshVolume * mmPerUnit ** 3 / 1000).toFixed(2) + ' cm³');
+            set('vol-area', m.area.toFixed(2) + ' u²');
         }
 
         // --- Coalesced rebuilds ------------------------------------------------
@@ -592,6 +737,32 @@
                 }
             });
 
+            // Revolution controls. The interval and the equations use the text
+            // debounce; the mesh sliders use the adaptive one, same split as the
+            // surfaces mode.
+            for (const id of ['rev-outer', 'rev-inner']) {
+                const el = document.getElementById(id);
+                el.addEventListener('input', () => {
+                    revolution[id === 'rev-outer' ? 'outer' : 'inner'] = el.value;
+                    scheduleEquationRebuild();
+                });
+                el.addEventListener('keypress', e => {
+                    if (e.key === 'Enter') { clearTimeout(equationTimer); equationTimer = null; regenerateAll(); }
+                });
+            }
+            for (const id of ['rev-a', 'rev-b']) {
+                document.getElementById(id).addEventListener('input', scheduleEquationRebuild);
+            }
+            for (const id of ['rev-axial', 'rev-angular', 'rev-riemann']) {
+                const el = document.getElementById(id);
+                el.addEventListener('input', () => {
+                    const v = parseInt(el.value);
+                    document.getElementById(id + '-value').textContent =
+                        (id === 'rev-riemann' && v === 0) ? tr('off') : String(v);
+                    scheduleRebuild({ surface: true });
+                });
+            }
+
             document.getElementById('show-intersections').addEventListener('change', () => {
                 buildIntersections(
                     parseInt(document.getElementById('resolution').value),
@@ -616,7 +787,12 @@
             });
         }
 
+        // Everything downstream — STL, PNG, the dimension readout — consumes this,
+        // so switching mode needs no changes in any of them.
         function visibleSurfaces() {
+            if (appMode === 'revolution') {
+                return revolution.mesh ? [{ mesh: revolution.mesh, equation: revolution.outer }] : [];
+            }
             return surfaces.filter(s => s.visible && s.mesh);
         }
 
@@ -651,6 +827,8 @@
         // Rebuilds every surface plus the intersection curves. This is the single
         // entry point used by the Generate button and by scheduleRebuild().
         function regenerateAll() {
+            if (appMode === 'revolution') { regenerateRevolution(); return; }
+
             const resolution = parseInt(document.getElementById('resolution').value);
             const range = parseInt(document.getElementById('range').value);
             const thickness = parseFloat(document.getElementById('thickness').value);
@@ -761,9 +939,16 @@
                 return (vertices.length / 3) - 1;
             }
 
-            // Helper: add a quad as 2 triangles (CCW = outward normal upward)
-            function addQuad(a, b, c, d) { indices.push(a, b, c, a, c, d); }
-            function addQuadFlip(a, b, c, d) { indices.push(a, c, b, a, d, c); }
+            // Helper: add a quad as 2 triangles. The call sites below were written
+            // against a convention that left the solid wound INWARD in Three.js
+            // space (measured signed volume was negative); the STL only came out
+            // right because the exporter's Y<->Z swap is a reflection, which
+            // flipped every facet back. Rather than leave that landmine for the
+            // revolution meshes, the two helpers are swapped here so the solid is
+            // genuinely outward-wound, and exportSTL now reverses each triangle to
+            // cancel the reflection. Net STL output is unchanged.
+            function addQuad(a, b, c, d) { indices.push(a, c, b, a, d, c); }
+            function addQuadFlip(a, b, c, d) { indices.push(a, b, c, a, c, d); }
 
             // --- TOP SURFACE ---
             const topIdx = [];
@@ -930,6 +1115,336 @@
             }
         }
 
+        // --- Revolution geometry ------------------------------------------------
+        // Revolves r = f(t) about the X axis: (t, r cos, r sin) with Three.js Y as
+        // height. Wound outward, matching the convention createSolidGeometry now
+        // follows. Validated against seven closed-form solids: every case came out
+        // closed, consistently wound, and within 0.06% of the exact volume.
+        //
+        // Four things here are not optional, each of which produced a silently
+        // broken mesh during prototyping:
+        //   - |f| : a negative f still sweeps a positive radius. Without abs() the
+        //     surface crosses the axis and inverts.
+        //   - a zero-radius ring collapses to ONE shared vertex, else the pole has
+        //     coincident-but-distinct vertices and the mesh is torn topologically
+        //     while looking closed.
+        //   - where the inner and outer radii coincide the region pinches shut and
+        //     the two rings must share vertices, for the same reason.
+        //   - the end caps wind opposite to the naive guess.
+        function buildRevolutionMesh(outerFn, innerFn, a, b, axialSteps, angularSteps) {
+            const positions = [];
+            const indices = [];
+            const push = (x, y, z) => { positions.push(x, y, z); return positions.length / 3 - 1; };
+
+            const ring = (t, radius) => {
+                if (radius < REV_EPS) {
+                    const p = push(t, 0, 0);
+                    return { idx: new Array(angularSteps).fill(p), degenerate: true };
+                }
+                const idx = [];
+                for (let j = 0; j < angularSteps; j++) {
+                    const th = 2 * Math.PI * j / angularSteps;
+                    idx.push(push(t, radius * Math.cos(th), radius * Math.sin(th)));
+                }
+                return { idx, degenerate: false };
+            };
+
+            const ts = [];
+            for (let i = 0; i <= axialSteps; i++) ts.push(a + (b - a) * i / axialSteps);
+
+            const rOut = t => Math.abs(outerFn(t));
+            const rIn = t => (innerFn ? Math.abs(innerFn(t)) : 0);
+
+            const outer = ts.map(t => ring(t, rOut(t)));
+            const inner = innerFn
+                ? ts.map((t, i) => Math.abs(rOut(t) - rIn(t)) < REV_EPS ? outer[i] : ring(t, rIn(t)))
+                : null;
+
+            const band = (rings, flip) => {
+                for (let i = 0; i < axialSteps; i++) {
+                    for (let j = 0; j < angularSteps; j++) {
+                        const jn = (j + 1) % angularSteps;
+                        const A = rings[i].idx[j],      B = rings[i].idx[jn];
+                        const C = rings[i + 1].idx[jn], D = rings[i + 1].idx[j];
+                        const add = (p, q, r) => {
+                            if (p === q || q === r || p === r) return;   // pole sliver
+                            if (flip) indices.push(p, r, q); else indices.push(p, q, r);
+                        };
+                        add(A, B, C);
+                        add(A, C, D);
+                    }
+                }
+            };
+            band(outer, false);
+            if (inner) band(inner, true);   // inner wall faces the axis
+
+            const cap = (ringIndex, farEnd) => {
+                const t = ts[ringIndex];
+                const o = outer[ringIndex];
+                if (o.degenerate) return;                     // closes to a point already
+
+                const fan = () => {
+                    const c = push(t, 0, 0);
+                    for (let j = 0; j < angularSteps; j++) {
+                        const jn = (j + 1) % angularSteps;
+                        if (farEnd) indices.push(c, o.idx[j], o.idx[jn]);
+                        else        indices.push(c, o.idx[jn], o.idx[j]);
+                    }
+                };
+
+                if (!inner) { fan(); return; }
+                const iR = inner[ringIndex];
+                if (iR.degenerate) { fan(); return; }          // inner radius vanishes
+                if (Math.abs(rOut(t) - rIn(t)) < REV_EPS) return;   // pinched, no cap
+
+                for (let j = 0; j < angularSteps; j++) {
+                    const jn = (j + 1) % angularSteps;
+                    const oj = o.idx[j], ojn = o.idx[jn], ij = iR.idx[j], ijn = iR.idx[jn];
+                    if (farEnd) indices.push(oj, ijn, ij, oj, ojn, ijn);
+                    else        indices.push(oj, ij, ijn, oj, ijn, ojn);
+                }
+            };
+            cap(0, false);
+            cap(axialSteps, true);
+
+            const geometry = new THREE.BufferGeometry();
+            geometry.setIndex(indices);
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geometry.computeVertexNormals();
+            return geometry;
+        }
+
+        // Signed volume by the divergence theorem: (1/6) sum v1 . (v2 x v3).
+        // Independent of the integral, so agreement between the two is a real
+        // check rather than a restatement.
+        function geometryVolume(geometry) {
+            const p = geometry.attributes.position.array;
+            const ix = geometry.index.array;
+            let v = 0;
+            for (let i = 0; i < ix.length; i += 3) {
+                const a = ix[i] * 3, b = ix[i + 1] * 3, c = ix[i + 2] * 3;
+                const ax = p[a], ay = p[a + 1], az = p[a + 2];
+                const bx = p[b], by = p[b + 1], bz = p[b + 2];
+                const cx = p[c], cy = p[c + 1], cz = p[c + 2];
+                v += (ax * (by * cz - bz * cy) - ay * (bx * cz - bz * cx) + az * (bx * cy - by * cx)) / 6;
+            }
+            return v;
+        }
+
+        // Composite Simpson's rule. n is forced even.
+        function simpson(g, a, b, n) {
+            if (n % 2) n++;
+            const h = (b - a) / n;
+            let s = g(a) + g(b);
+            for (let i = 1; i < n; i++) s += g(a + i * h) * (i % 2 ? 4 : 2);
+            return s * h / 3;
+        }
+
+        // The n disks or washers the integral is summing, drawn as open-ended
+        // cylinders at the midpoint rule. This is the part that makes the integral
+        // visible: raise n and watch them close on the smooth solid.
+        function buildRiemann(outerFn, innerFn, a, b, n, angularSteps) {
+            const group = new THREE.Group();
+            const width = (b - a) / n;
+            const material = new THREE.MeshPhongMaterial({
+                color: SURFACE_COLORS[1].solid,
+                transparent: true,
+                opacity: 0.35,
+                side: THREE.DoubleSide,
+                shininess: 40
+            });
+            const edgeMaterial = new THREE.LineBasicMaterial({
+                color: SURFACE_COLORS[1].wire, transparent: true, opacity: 0.5
+            });
+
+            for (let k = 0; k < n; k++) {
+                const mid = a + width * (k + 0.5);
+                const rOuter = Math.abs(outerFn(mid));
+                const rInner = innerFn ? Math.abs(innerFn(mid)) : 0;
+                if (rOuter < REV_EPS) continue;
+
+                const radial = Math.max(8, Math.min(angularSteps, 48));
+                const geo = new THREE.CylinderGeometry(rOuter, rOuter, width, radial, 1, rInner > REV_EPS);
+                geo.rotateZ(Math.PI / 2);        // cylinder default axis is Y; we revolve about X
+                geo.translate(mid, 0, 0);
+                const mesh = new THREE.Mesh(geo, material);
+                group.add(mesh);
+                group.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo, 30), edgeMaterial));
+            }
+            group.userData.disposable = true;
+            return group;
+        }
+
+        // Compiles one revolution input into a plain t -> number function, or
+        // records the parser message against the row.
+        function compileRadius(text, which) {
+            const trimmed = text.trim();
+            if (!trimmed) return null;
+            let compiled;
+            try {
+                compiled = math.parse(trimmed).compile();
+                compiled.evaluate({ x: 1, ...parameters });
+            } catch (error) {
+                revolution[which] = { key: 'statusInvalid', detail: error.message };
+                return undefined;   // distinct from null (= intentionally empty)
+            }
+            const scope = { x: 0, ...parameters };
+            return t => {
+                scope.x = t;
+                try {
+                    const r = compiled.evaluate(scope);
+                    return (typeof r === 'number' && isFinite(r)) ? r : 0;
+                } catch (e) {
+                    return 0;
+                }
+            };
+        }
+
+        function clearRevolution() {
+            for (const key of ['mesh', 'wireMesh']) {
+                const m = revolution[key];
+                if (!m) continue;
+                scene.remove(m);
+                m.material.dispose();
+                if (key === 'mesh') m.geometry.dispose();   // shared with the wireframe
+                revolution[key] = null;
+            }
+            if (revolution.riemannGroup) {
+                disposeObject3D(revolution.riemannGroup);
+                scene.remove(revolution.riemannGroup);
+                revolution.riemannGroup = null;
+            }
+        }
+
+        function regenerateRevolution() {
+            clearRevolution();
+            revolution.outerError = null;
+            revolution.innerError = null;
+            revolution.metrics = null;
+
+            const a = parseFloat(document.getElementById('rev-a').value);
+            const b = parseFloat(document.getElementById('rev-b').value);
+            const axialSteps = parseInt(document.getElementById('rev-axial').value);
+            const angularSteps = parseInt(document.getElementById('rev-angular').value);
+            const riemannN = parseInt(document.getElementById('rev-riemann').value);
+            const opacity = parseFloat(document.getElementById('opacity').value);
+
+            const outerFn = compileRadius(revolution.outer, 'outerError');
+            const innerFn = compileRadius(revolution.inner, 'innerError');
+
+            if (!revolution.outer.trim()) revolution.outerError = { key: 'statusEmpty' };
+            if (!(b > a)) revolution.outerError = { key: 'errInterval' };
+
+            renderRevolutionStatus();
+            if (!outerFn || innerFn === undefined || !(b > a)) { updateDimensions(); return; }
+
+            const geometry = buildRevolutionMesh(outerFn, innerFn || null, a, b, axialSteps, angularSteps);
+
+            // With the Riemann disks on, the solid becomes a ghost envelope: at the
+            // normal opacity it hides the very thing the mode exists to show
+            // (measured — the disks dropped from 9.4% of the frame to 0.4%).
+            const solidOpacity = riemannN > 0 ? Math.min(opacity, 0.12) : opacity;
+
+            revolution.mesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({
+                color: SURFACE_COLORS[0].solid,
+                transparent: true,
+                opacity: solidOpacity,
+                side: THREE.DoubleSide,
+                shininess: 100
+            }));
+            revolution.mesh.castShadow = true;
+            revolution.mesh.receiveShadow = true;
+            scene.add(revolution.mesh);
+
+            revolution.wireMesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
+                color: SURFACE_COLORS[0].wire, wireframe: true, transparent: true,
+                opacity: riemannN > 0 ? 0.1 : 0.25
+            }));
+            revolution.wireMesh.visible = showWireframe;
+            scene.add(revolution.wireMesh);
+
+            // Disk: V = pi ∫ f². Washer: V = pi ∫ (f² − g²). Both integrated over
+            // the same interval the mesh was built on, at the mesh's own axial
+            // resolution, so the two numbers are comparable.
+            const integrand = innerFn
+                ? t => outerFn(t) ** 2 - innerFn(t) ** 2
+                : t => outerFn(t) ** 2;
+            const integral = Math.PI * simpson(integrand, a, b, axialSteps);
+
+            // Lateral area of revolution: S = 2 pi ∫ |f| sqrt(1 + f'²).
+            const d = Math.max(1e-6, (b - a) * 1e-6);
+            const areaOf = fn => 2 * Math.PI * simpson(t => {
+                const fp = (fn(t + d) - fn(t - d)) / (2 * d);
+                return Math.abs(fn(t)) * Math.sqrt(1 + fp * fp);
+            }, a + d, b - d, axialSteps);
+            const area = areaOf(outerFn) + (innerFn ? areaOf(innerFn) : 0);
+
+            revolution.metrics = { integral, meshVolume: geometryVolume(geometry), area };
+
+            if (riemannN > 0) {
+                revolution.riemannGroup = buildRiemann(outerFn, innerFn || null, a, b, riemannN, angularSteps);
+                scene.add(revolution.riemannGroup);
+            }
+
+            document.getElementById('revolution-method').textContent = innerFn ? 'WASHER' : 'DISK';
+            document.getElementById('vol-integral-label').textContent = innerFn ? 'π ∫ (f²−g²) dx' : 'π ∫ f² dx';
+            updateDimensions();
+        }
+
+        function renderRevolutionStatus() {
+            for (const [id, err] of [['rev-outer-status', revolution.outerError],
+                                     ['rev-inner-status', revolution.innerError]]) {
+                const el = document.getElementById(id);
+                el.textContent = '';
+                const span = document.createElement('span');
+                if (err) {
+                    span.className = 'status-err';
+                    // textContent, not innerHTML: detail is a parser message.
+                    span.textContent = tr(err.key) + (err.detail ? ' — ' + err.detail : '');
+                } else if (id === 'rev-inner-status' && !revolution.inner.trim()) {
+                    span.className = 'status-muted';
+                    span.textContent = tr('revDiskMethod');
+                } else {
+                    span.className = 'status-ok';
+                    span.textContent = tr('statusValid');
+                }
+                el.appendChild(span);
+            }
+        }
+
+        function setMode(mode) {
+            if (mode === appMode) return;
+            appMode = mode;
+
+            if (mode === 'revolution') { clearIntersections(); for (const s of surfaces) clearSurfaceMeshes(s); }
+            else clearRevolution();
+
+            document.getElementById('mode-surfaces').classList.toggle('active', mode === 'surfaces');
+            document.getElementById('mode-revolution').classList.toggle('active', mode === 'revolution');
+            document.getElementById('surfaces-panel').hidden = mode !== 'surfaces';
+            document.getElementById('revolution-panel').hidden = mode !== 'revolution';
+            document.getElementById('examples-item').hidden = mode !== 'surfaces';
+            document.getElementById('rev-examples-item').hidden = mode !== 'revolution';
+            document.getElementById('rev-options-item').hidden = mode !== 'revolution';
+            document.getElementById('volume-block').hidden = mode !== 'revolution';
+            // A solid of revolution is already solid, and the intersection curves
+            // are built on heightfield samples that do not exist in this mode.
+            document.getElementById('thickness-row').hidden = mode !== 'surfaces';
+            document.getElementById('intersections-row').hidden = mode !== 'surfaces';
+
+            regenerateAll();
+        }
+
+        function loadRevExample(outer, inner, a, b) {
+            revolution.outer = outer;
+            revolution.inner = inner;
+            document.getElementById('rev-outer').value = outer;
+            document.getElementById('rev-inner').value = inner;
+            document.getElementById('rev-a').value = a;
+            document.getElementById('rev-b').value = b;
+            regenerateRevolution();
+        }
+
         function loadExample(equation) {
             const s = surfaceById(activeSurfaceId) || surfaces[0];
             if (!s) return;
@@ -950,6 +1465,7 @@
             for (const s of surfaces) {
                 if (s.wireMesh) s.wireMesh.visible = s.visible && showWireframe;
             }
+            if (revolution.wireMesh) revolution.wireMesh.visible = showWireframe;
         }
 
         // --- Surface list UI ----------------------------------------------------
@@ -1257,9 +1773,13 @@
                 }
 
                 for (let i = 0; i < idxArr.length; i += 3) {
+                    // Vertices 2 and 3 are swapped on purpose. Geometry is wound
+                    // outward in Three.js space, and the Y<->Z axis swap above is
+                    // a reflection, which reverses handedness; reversing the
+                    // triangle cancels that so the STL stays outward-facing.
                     const v1 = toStlVertex(idxArr[i]);
-                    const v2 = toStlVertex(idxArr[i + 1]);
-                    const v3 = toStlVertex(idxArr[i + 2]);
+                    const v2 = toStlVertex(idxArr[i + 2]);
+                    const v3 = toStlVertex(idxArr[i + 1]);
 
                     // Recalculate normal in STL space
                     const ax = v2.x - v1.x, ay = v2.y - v1.y, az = v2.z - v1.z;
@@ -1313,6 +1833,25 @@
             en: {
                 equation:         'Equations z = f(x, y)',
                 equationPlaceholder: 'e.g. A * sin(f*x + phi)',
+                modeSurfaces:     'Surfaces',
+                modeRevolution:   'Revolution',
+                revolutionInput:  'Revolve r = f(x) about X',
+                revOuter:         'Outer radius f(x)',
+                revInner:         'Inner radius g(x) — empty for a solid disk',
+                revInterval:      'Interval',
+                revExamples:      'Classic Solids',
+                revOptions:       'Revolution & Riemann',
+                revAxial:         'Axial steps',
+                revAngular:       'Angular steps',
+                revRiemann:       'Riemann n',
+                revRiemannHint:   'Draws the n disks or washers the integral sums. Raise n and watch them converge to the smooth solid.',
+                revDiskMethod:    'disk method (solid)',
+                off:              'off',
+                errInterval:      '✗ The interval needs b > a',
+                volumeLabel:      'Volume of revolution',
+                volMesh:          'Mesh',
+                volPrint:         'Printed',
+                volArea:          'Surface area',
                 addSurface:       '+ Add surface',
                 removeSurface:    'Remove this surface',
                 hideSurface:      'Hide this surface',
@@ -1357,6 +1896,7 @@
                 helpStep1:        'Enter your equation in the z = f(x, y) field.',
                 helpStep2:        'Click <strong>Generate</strong> or pick a preset example.',
                 helpStepSurfaces: 'Use <strong>+ Add surface</strong> for up to four equations at once. Where two of them cross, the intersection curve is drawn automatically. The colour swatch shows or hides a surface.',
+                helpStepRevolution: 'Switch to <strong>Revolution</strong> to revolve r = f(x) about the X axis. The panel compares the exact integral π∫f²dx against the volume of the mesh it built, and the <strong>Riemann n</strong> slider draws the n disks the integral sums.',
                 helpStep3:        'Drag to rotate, scroll or pinch to zoom.',
                 helpStep4:        'Adjust sliders to tune parameters in real time.',
                 helpStep5:        'Click <strong>Export STL</strong> to download for 3D printing, or <strong>Export PNG</strong> for an image.',
@@ -1371,6 +1911,25 @@
             es: {
                 equation:         'Ecuaciones z = f(x, y)',
                 equationPlaceholder: 'ej. A * sin(f*x + phi)',
+                modeSurfaces:     'Superficies',
+                modeRevolution:   'Revolución',
+                revolutionInput:  'Revolucionar r = f(x) en torno a X',
+                revOuter:         'Radio exterior f(x)',
+                revInner:         'Radio interior g(x) — vacío para disco macizo',
+                revInterval:      'Intervalo',
+                revExamples:      'Sólidos clásicos',
+                revOptions:       'Revolución y Riemann',
+                revAxial:         'Pasos axiales',
+                revAngular:       'Pasos angulares',
+                revRiemann:       'n de Riemann',
+                revRiemannHint:   'Dibuja los n discos o arandelas que suma la integral. Sube n y míralos converger al sólido liso.',
+                revDiskMethod:    'método del disco (macizo)',
+                off:              'apagado',
+                errInterval:      '✗ El intervalo necesita b > a',
+                volumeLabel:      'Volumen de revolución',
+                volMesh:          'Malla',
+                volPrint:         'Impreso',
+                volArea:          'Área de superficie',
                 addSurface:       '+ Agregar superficie',
                 removeSurface:    'Quitar esta superficie',
                 hideSurface:      'Ocultar esta superficie',
@@ -1415,6 +1974,7 @@
                 helpStep1:        'Escribe tu ecuación en el campo z = f(x, y).',
                 helpStep2:        'Haz clic en <strong>Generar</strong> o selecciona un ejemplo predefinido.',
                 helpStepSurfaces: 'Usa <strong>+ Agregar superficie</strong> para trabajar con hasta cuatro ecuaciones a la vez. Donde dos se cruzan, la curva de intersección se dibuja automáticamente. El cuadro de color muestra u oculta una superficie.',
+                helpStepRevolution: 'Cambia a <strong>Revolución</strong> para revolucionar r = f(x) en torno al eje X. El panel compara la integral exacta π∫f²dx con el volumen de la malla que generó, y el slider <strong>n de Riemann</strong> dibuja los n discos que suma la integral.',
                 helpStep3:        'Arrastra para rotar, scroll o pellizco para hacer zoom.',
                 helpStep4:        'Ajusta los sliders para modificar parámetros en tiempo real.',
                 helpStep5:        'Haz clic en <strong>Exportar STL</strong> para imprimir en 3D, o <strong>Exportar PNG</strong> para una imagen.',

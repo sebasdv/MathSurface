@@ -170,6 +170,85 @@ body {
     box-shadow: 0 0 0 3px var(--dec-blue-glow);
 }
 
+/* ---- MODE SWITCH ---- */
+.mode-switch {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.6rem 1.25rem 0;
+}
+
+.mode-btn {
+    flex: 1;
+    padding: 0.4rem 0.5rem;
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--dec-text-muted);
+    background: var(--dec-dark-bg);
+    border: 1.5px solid var(--dec-border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.mode-btn:hover { color: var(--dec-text-main); }
+
+.mode-btn.active {
+    color: white;
+    background: var(--dec-blue-primary);
+    border-color: var(--dec-blue-primary);
+}
+
+/* ---- REVOLUTION PANEL ---- */
+.rev-label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--dec-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+}
+
+.rev-interval {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.35rem;
+    flex-wrap: wrap;
+}
+
+.rev-interval .rev-label { margin-bottom: 0; flex: 0 0 auto; }
+.rev-bracket { color: var(--dec-text-muted); font-size: 0.85rem; }
+
+.rev-num {
+    width: 4.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    padding: 0.35rem 0.45rem;
+    border: 1px solid var(--dec-border);
+    border-radius: 6px;
+    background: var(--dec-dark-bg);
+    color: var(--dec-text-main);
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.rev-num:focus {
+    border-color: var(--dec-blue-primary);
+    box-shadow: 0 0 0 3px var(--dec-blue-glow);
+}
+
+.rev-hint {
+    font-size: 0.68rem;
+    line-height: 1.5;
+    color: var(--dec-text-muted);
+    margin-top: 0.5rem;
+}
+
+.status-muted { color: var(--dec-text-muted); }
+
 /* ---- SURFACE LIST ---- */
 .surface-row {
     display: flex;
@@ -594,3 +673,12 @@ body {
     display: flex;
     flex-direction: column;
 }
+
+#volume-block {
+    margin-top: 0.4rem;
+    padding-top: 0.4rem;
+    border-top: 1px solid var(--dec-border);
+}
+
+#volume-block .dim-label { text-transform: none; letter-spacing: 0; }
+#volume-block[hidden] { display: none; }
