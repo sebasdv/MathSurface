@@ -204,10 +204,14 @@
 
                     <!-- Polynomial Parameters -->
                     <div class="accordion-item">
-                        <button class="accordion-header active" onclick="toggleAccordion('function-params')">
+                        <!-- Collapsed by default: the opening equation is the ripple,
+                             which uses A/f/phi rather than these coefficients, so an
+                             expanded panel of sliders that do nothing yet would read
+                             as broken. -->
+                        <button class="accordion-header" onclick="toggleAccordion('function-params')">
                             <span id="coeff-header" data-i18n="polynomial">Polynomial f(x,y)</span>
                         </button>
-                        <div class="accordion-content active" id="function-params-accordion">
+                        <div class="accordion-content" id="function-params-accordion">
                             <div class="accordion-body">
                                 <div class="param-slider-inline">
                                     <label id="a1-label">a1 · x³</label>
@@ -508,7 +512,13 @@
             setTimeout(() => {
                 updateAllParameterValues();
                 buildGrid();
-                addSurface('a1*x^3 + a2*y^3 + a3*x^2 + a4*y^2 + a5*x^2*y^2');
+                // The old default was the a1..a5 polynomial, which over the default
+                // range measured 80 x 80 x 1043 mm — a one-metre tower is a strange
+                // first thing to show in a 3D-printing tool, and it stays unprintable
+                // at every range (40 x 40 x 83 mm even at range 2). The ripple is
+                // bounded by A, so it opens as an 80 x 80 x 43 mm plate, and it uses
+                // the A/f/phi sliders that greet you with Wave Parameters expanded.
+                addSurface('A * sin(f*sqrt(x^2 + y^2) + phi)');
             }, 100);
         }
 
@@ -2122,10 +2132,56 @@
             renderer.setSize(width, height);
         }
 
-        // Every visible surface goes into a single `solid` block as a separate
-        // disconnected body. One block rather than several is deliberate: plenty
-        // of slicers only read the first `solid` of a multi-solid ASCII file,
-        // whereas disconnected bodies inside one mesh are universally understood.
+        // Walks every visible surface and hands each triangle to `emit`, already
+        // converted to STL space. Shared by both writers so the axis swap and the
+        // winding correction can only be defined once.
+        //
+        // Three.js is Y-up internally; slicers expect Z-up, so STL(x,y,z) =
+        // THREE(x, z, y). That swap is a reflection, which reverses handedness, so
+        // vertices 2 and 3 are also exchanged — geometry is wound outward in
+        // Three.js space and has to stay outward in the file.
+        function eachStlTriangle(visible, emit) {
+            const scale = mmPerUnit;   // Three.js units → mm
+            for (const s of visible) {
+                const pos = s.mesh.geometry.attributes.position.array;
+                const idx = s.mesh.geometry.index.array;
+                const vx = i => pos[i * 3] * scale;
+                const vy = i => pos[i * 3 + 2] * scale;
+                const vz = i => pos[i * 3 + 1] * scale;
+
+                for (let i = 0; i < idx.length; i += 3) {
+                    const a = idx[i], b = idx[i + 2], c = idx[i + 1];
+                    const ax = vx(a), ay = vy(a), az = vz(a);
+                    const bx = vx(b), by = vy(b), bz = vz(b);
+                    const cx = vx(c), cy = vy(c), cz = vz(c);
+
+                    const e1x = bx - ax, e1y = by - ay, e1z = bz - az;
+                    const e2x = cx - ax, e2y = cy - ay, e2z = cz - az;
+                    let nx = e1y * e2z - e1z * e2y;
+                    let ny = e1z * e2x - e1x * e2z;
+                    let nz = e1x * e2y - e1y * e2x;
+                    const len = Math.hypot(nx, ny, nz) || 1;
+                    nx /= len; ny /= len; nz /= len;
+
+                    emit(nx, ny, nz, ax, ay, az, bx, by, bz, cx, cy, cz);
+                }
+            }
+        }
+
+        function countStlTriangles(visible) {
+            let n = 0;
+            for (const s of visible) n += s.mesh.geometry.index.count / 3;
+            return n;
+        }
+
+        // Binary STL: 80-byte header, uint32 triangle count, then 50 bytes per
+        // facet (12 little-endian floats plus a 2-byte attribute field). Roughly a
+        // quarter the size of the ASCII form — the shell example went from 6.2 MB
+        // to 1.5 MB — and every current slicer reads it.
+        //
+        // Multiple visible surfaces are written as disconnected bodies in one file
+        // rather than separate solids: that is what the format offers, and it is
+        // what slicers treat as a multi-body object.
         function exportSTL() {
             const visible = visibleSurfaces();
             if (visible.length === 0) {
@@ -2133,60 +2189,27 @@
                 return;
             }
 
-            const scale = mmPerUnit;  // convert Three.js units → mm
+            const triangles = countStlTriangles(visible);
+            const buffer = new ArrayBuffer(84 + triangles * 50);
+            const view = new DataView(buffer);
 
-            // Collected as chunks and joined once: at resolution 100 this is
-            // ~41k facets per surface, and repeated concatenation of a multi-MB
-            // string is needlessly slow.
-            const parts = ['solid mathsurface\n'];
+            // The header must not begin with "solid", or a parser sniffing the
+            // first bytes will try to read the file as ASCII.
+            const header = `MathSurface binary STL - ${triangles} facets`;
+            for (let i = 0; i < header.length && i < 80; i++) view.setUint8(i, header.charCodeAt(i));
+            view.setUint32(80, triangles, true);
 
-            for (const s of visible) {
-                const pos = s.mesh.geometry.attributes.position.array;
-                const idxArr = s.mesh.geometry.index.array;
-
-                // Three.js uses Y-up internally for the surface height.
-                // STL slicers expect Z-up. Swap: STL(x,y,z) = THREE(x*s, z*s, y*s)
-                function toStlVertex(idx) {
-                    const base = idx * 3;
-                    return {
-                        x: pos[base]     * scale,   // X stays X
-                        y: pos[base + 2] * scale,   // Three Z → STL Y
-                        z: pos[base + 1] * scale    // Three Y → STL Z (up)
-                    };
+            let offset = 84;
+            eachStlTriangle(visible, (nx, ny, nz, ax, ay, az, bx, by, bz, cx, cy, cz) => {
+                for (const v of [nx, ny, nz, ax, ay, az, bx, by, bz, cx, cy, cz]) {
+                    view.setFloat32(offset, v, true);
+                    offset += 4;
                 }
+                view.setUint16(offset, 0, true);
+                offset += 2;
+            });
 
-                for (let i = 0; i < idxArr.length; i += 3) {
-                    // Vertices 2 and 3 are swapped on purpose. Geometry is wound
-                    // outward in Three.js space, and the Y<->Z axis swap above is
-                    // a reflection, which reverses handedness; reversing the
-                    // triangle cancels that so the STL stays outward-facing.
-                    const v1 = toStlVertex(idxArr[i]);
-                    const v2 = toStlVertex(idxArr[i + 2]);
-                    const v3 = toStlVertex(idxArr[i + 1]);
-
-                    // Recalculate normal in STL space
-                    const ax = v2.x - v1.x, ay = v2.y - v1.y, az = v2.z - v1.z;
-                    const bx = v3.x - v1.x, by = v3.y - v1.y, bz = v3.z - v1.z;
-                    let nx = ay * bz - az * by;
-                    let ny = az * bx - ax * bz;
-                    let nz = ax * by - ay * bx;
-                    const len = Math.sqrt(nx*nx + ny*ny + nz*nz) || 1;
-                    nx /= len; ny /= len; nz /= len;
-
-                    parts.push(
-                        `  facet normal ${nx.toFixed(6)} ${ny.toFixed(6)} ${nz.toFixed(6)}\n`,
-                        '    outer loop\n',
-                        `      vertex ${v1.x.toFixed(6)} ${v1.y.toFixed(6)} ${v1.z.toFixed(6)}\n`,
-                        `      vertex ${v2.x.toFixed(6)} ${v2.y.toFixed(6)} ${v2.z.toFixed(6)}\n`,
-                        `      vertex ${v3.x.toFixed(6)} ${v3.y.toFixed(6)} ${v3.z.toFixed(6)}\n`,
-                        '    endloop\n  endfacet\n'
-                    );
-                }
-            }
-
-            parts.push('endsolid mathsurface');
-
-            downloadBlob(new Blob([parts.join('')], { type: 'model/stl' }), 'mathsurface.stl');
+            downloadBlob(new Blob([buffer], { type: 'model/stl' }), 'mathsurface.stl');
         }
 
         // Accordion toggle

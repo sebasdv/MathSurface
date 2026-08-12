@@ -19,7 +19,9 @@ Generador interactivo de superficies matemáticas 3D para impresión 3D. Visuali
 3. Haz clic en "Generar" o selecciona un ejemplo predefinido.
 4. Con "+ Agregar superficie" puedes graficar hasta cuatro ecuaciones a la vez. Donde dos se cruzan se dibuja automáticamente la **curva de intersección**.
 5. Arrastra para rotar, scroll o pellizco para hacer zoom. El botón ⏸ del encabezado pausa la rotación automática.
-6. Exporta como STL para impresión 3D (todas las superficies visibles, cada una como un cuerpo), o como PNG si solo quieres la imagen.
+6. Exporta como STL binario para impresión 3D (todas las superficies visibles, cada una como un cuerpo), o como PNG si solo quieres la imagen.
+
+El STL se escribe en **binario**, no ASCII: alrededor de un cuarto del tamaño para la misma geometría (el ejemplo de cáscara pasa de 6.2 MB a 1.5 MB) y lo lee cualquier slicer actual. Verificado parseando el binario de vuelta y comparándolo con el ASCII equivalente: mismo número de triángulos, mismo volumen, ambos cerrados, y las normales guardadas concuerdan con el cosido.
 
 ### Controles por modo
 Cada modo muestra solo los controles que realmente lee, para que no haya sliders que no hagan nada:
@@ -99,7 +101,9 @@ Interactive 3D math surface generator for 3D printing. Visualize and export z = 
 3. Click "Generate" or pick a preset example.
 4. "+ Add surface" plots up to four equations at once. Where two of them cross, the **intersection curve** is drawn automatically.
 5. Drag to rotate, scroll or pinch to zoom. The ⏸ button in the header pauses the auto-rotation.
-6. Export as STL for 3D printing (every visible surface, each as its own body), or as PNG if you just want the image.
+6. Export as binary STL for 3D printing (every visible surface, each as its own body), or as PNG if you just want the image.
+
+The STL is written in **binary**, not ASCII: roughly a quarter the size for the same geometry (the shell example drops from 6.2 MB to 1.5 MB) and every current slicer reads it. Verified by parsing the binary back and comparing against the equivalent ASCII: same triangle count, same volume, both closed, and the stored normals agree with the winding.
 
 ### Mode-specific controls
 Each mode shows only the controls it actually reads, so no slider sits there doing nothing:
