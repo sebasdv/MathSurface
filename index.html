@@ -13,6 +13,11 @@
     <!-- DEC Typography: Inter + JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Deliberately no integrity attribute here. Google generates this
+         stylesheet per request, varying the @font-face rules by User-Agent, so
+         a pinned hash would fail on any browser served a different variant. The
+         page degrades to system-ui if it never arrives, which is why it is safe
+         to leave unpinned while the two scripts are not. -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="dec-design-system.css">
 </head>
@@ -392,8 +397,21 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
+    <!-- Subresource Integrity: the browser refuses to run either file if its
+         hash does not match, so a compromised or swapped CDN response cannot
+         execute here. `crossorigin` is required for SRI on a cross-origin
+         script; cdnjs sends Access-Control-Allow-Origin: *.
+         These digests were computed from the downloaded bytes and independently
+         confirmed against the values cdnjs publishes at
+         https://api.cdnjs.com/libraries/<lib>/<version>?fields=sri
+         If either library is ever version-bumped, the hash MUST be recomputed
+         or the app will stop loading. -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
+            integrity="sha512-dLxUelApnYxpLt6K2iomGngnHO83iUvZytA3YjDUCjT0HDOHKXnVYdf3hU4JjM8uEhxf9nD1/ey98U3t2vZ0qQ=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"
+            integrity="sha512-VMIzok05yICztVJ0Pu2ZXHHz6Pe+fNONIcepOD3kzgL0SJG3GH4IO3DmBRO766hIWUOHIS/IWdSqRGWWzgzqRw=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
         let scene, camera, renderer;
         let gridGroup = null;   // grupo de la grilla, se recrea al cambiar range/mmPerUnit
@@ -522,12 +540,22 @@
             }, 100);
         }
 
+        // Kept so the language toggle can redraw it — the header buttons still work
+        // while a fatal error is on screen.
+        let fatalErrorKey = null;
+
         function showFatalError(key) {
+            fatalErrorKey = key;
             const container = document.getElementById('canvas-container');
-            const box = document.createElement('div');
-            box.className = 'canvas-error';
+            // Replaced, not appended: repeated calls used to stack boxes, leaving
+            // the first (stale) message as the one actually read.
+            let box = container.querySelector('.canvas-error');
+            if (!box) {
+                box = document.createElement('div');
+                box.className = 'canvas-error';
+                container.appendChild(box);
+            }
             box.textContent = tr(key);
-            container.appendChild(box);
         }
 
         function addLights() {
@@ -2472,6 +2500,7 @@
             applyModeControls();
             renderRevolutionStatus();
             updateVolumeReadout();
+            if (fatalErrorKey) showFatalError(fatalErrorKey);
         }
 
         function toggleLang() {

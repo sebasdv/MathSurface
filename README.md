@@ -170,10 +170,38 @@ The intersection curve is the zero level set of the difference field `d = z₁ �
 
 ---
 
+## Integridad de dependencias
+Los dos scripts de CDN llevan **Subresource Integrity** (SHA-512) más `crossorigin="anonymous"`: si el archivo servido no coincide con su hash, el navegador se niega a ejecutarlo, y la app muestra su mensaje de error en vez de romperse a medias.
+
+Los digests se calcularon desde los bytes descargados y se confirmaron contra los que publica cdnjs:
+
+```bash
+curl -s https://api.cdnjs.com/libraries/three.js/r128?fields=sri
+curl -s https://api.cdnjs.com/libraries/mathjs/11.11.0?fields=sri
+```
+
+**Si actualizas la versión de Three.js o Math.js hay que recalcular el hash**, o la app deja de cargar.
+
+La hoja de estilos de Google Fonts va **sin** `integrity` a propósito: Google la genera por petición y varía las reglas `@font-face` según el User-Agent, así que un hash fijo fallaría en algunos navegadores. Si no llega, la página cae a `system-ui` y sigue funcionando.
+
 ## Stack
 - [Three.js r128](https://threejs.org/)
 - [Math.js v11](https://mathjs.org/)
 - Vanilla JS, no build tools
+
+## Dependency integrity
+Both CDN scripts carry **Subresource Integrity** (SHA-512) plus `crossorigin="anonymous"`: if the served file does not match its hash the browser refuses to run it, and the app shows its error message instead of half-breaking.
+
+The digests were computed from the downloaded bytes and confirmed against the ones cdnjs publishes:
+
+```bash
+curl -s https://api.cdnjs.com/libraries/three.js/r128?fields=sri
+curl -s https://api.cdnjs.com/libraries/mathjs/11.11.0?fields=sri
+```
+
+**Bumping the Three.js or Math.js version means recomputing the hash**, or the app stops loading.
+
+The Google Fonts stylesheet deliberately has **no** `integrity`: Google generates it per request, varying the `@font-face` rules by User-Agent, so a pinned hash would fail on some browsers. If it never arrives the page falls back to `system-ui` and keeps working.
 
 ## License
 MIT © Sebastián Duarte Villanueva
