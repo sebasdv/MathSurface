@@ -164,7 +164,7 @@
                                     <input type="range" id="rev-riemann" min="0" max="40" step="1" value="0">
                                     <span class="param-value" id="rev-riemann-value" data-i18n="off">off</span>
                                 </div>
-                                <p class="rev-hint" data-i18n="revRiemannHint">Draws the n disks or washers the integral sums. Raise n and watch them converge to the smooth solid.</p>
+                                <p class="rev-hint" id="rev-riemann-hint" data-i18n="revRiemannHint">Draws the n disks or washers the integral sums. Raise n and watch them converge to the smooth solid.</p>
                             </div>
                         </div>
                     </div>
@@ -1658,15 +1658,26 @@
                 ? 2 * Math.PI * simpson(t => t * (hi(t) - lo(t)), a, b, axialSteps)
                 : Math.PI * simpson(t => hi(t) ** 2 - lo(t) ** 2, a, b, axialSteps);
 
-            // Disk: lateral area 2 pi ∫ |f| sqrt(1 + f'²) of each radius curve.
-            // Shell: each curve sweeps an annulus-like sheet, 2 pi ∫ x sqrt(1 + f'²).
+            // Total surface area, not just the swept sheets. The lateral part is
+            // 2 pi ∫ |f| sqrt(1 + f'²) for a radius curve, or 2 pi ∫ x sqrt(1 + f'²)
+            // for a shell sheet; the flat ends have to be added on top. Omitting
+            // them understated a cylinder by its two caps (25.13 of 87.96), a cone
+            // by its base and a shell by its wall — the sphere matched only because
+            // it has no flat ends at all.
             const d = Math.max(1e-6, (b - a) * 1e-6);
             const areaOf = fn => 2 * Math.PI * simpson(t => {
                 const fp = (fn(t + d) - fn(t - d)) / (2 * d);
                 const weight = shell ? Math.abs(t) : Math.abs(fn(t));
                 return weight * Math.sqrt(1 + fp * fp);
             }, a + d, b - d, axialSteps);
-            const area = areaOf(hi) + (innerFn || shell ? areaOf(lo) : 0);
+
+            const lateral = areaOf(hi) + (innerFn || shell ? areaOf(lo) : 0);
+            // Disk/washer: an annular cap at each end. Shell: a cylindrical wall at
+            // each radius. Both vanish on their own where the region closes.
+            const ends = shell
+                ? 2 * Math.PI * b * (hi(b) - lo(b)) + 2 * Math.PI * a * (hi(a) - lo(a))
+                : Math.PI * (hi(a) ** 2 - lo(a) ** 2) + Math.PI * (hi(b) ** 2 - lo(b) ** 2);
+            const area = lateral + Math.abs(ends);
 
             revolution.metrics = {
                 integral,
@@ -1701,8 +1712,10 @@
                     // textContent, not innerHTML: detail is a parser message.
                     span.textContent = tr(err.key) + (err.detail ? ' — ' + err.detail : '');
                 } else if (id === 'rev-inner-status' && !revolution.inner.trim()) {
+                    // An empty second input means different things per axis, and
+                    // saying "disk method" while in shell mode was simply wrong.
                     span.className = 'status-muted';
-                    span.textContent = tr('revDiskMethod');
+                    span.textContent = tr(revolution.axis === 'y' ? 'revShellToAxis' : 'revDiskMethod');
                 } else {
                     span.className = 'status-ok';
                     span.textContent = tr('statusValid');
@@ -1793,6 +1806,9 @@
             document.getElementById('rev-inner-label').textContent = tr(shell ? 'revLower' : 'revInner');
             document.getElementById('revolution-input-label').textContent =
                 tr(shell ? 'revolutionInputY' : 'revolutionInput');
+            // The slices are tubes under the shell method, not disks or washers.
+            document.getElementById('rev-riemann-hint').textContent =
+                tr(shell ? 'revRiemannHintShell' : 'revRiemannHint');
         }
 
         // `axis` defaults to 'x' rather than inheriting the active one. A preset
@@ -2219,7 +2235,9 @@
                 revAngular:       'Angular steps',
                 revRiemann:       'Riemann n',
                 revRiemannHint:   'Draws the n disks or washers the integral sums. Raise n and watch them converge to the smooth solid.',
+                revRiemannHintShell: 'Draws the n cylindrical shells the integral sums. Unroll one and it is a rectangle of width 2πx and height f−g.',
                 revDiskMethod:    'disk method (solid)',
+                revShellToAxis:   'region between the curve and the x axis',
                 off:              'off',
                 errInterval:      '✗ The interval needs b > a',
                 volumeLabel:      'Volume of revolution',
@@ -2313,7 +2331,9 @@
                 revAngular:       'Pasos angulares',
                 revRiemann:       'n de Riemann',
                 revRiemannHint:   'Dibuja los n discos o arandelas que suma la integral. Sube n y míralos converger al sólido liso.',
+                revRiemannHintShell: 'Dibuja las n cáscaras cilíndricas que suma la integral. Desenrolla una y es un rectángulo de ancho 2πx y alto f−g.',
                 revDiskMethod:    'método del disco (macizo)',
+                revShellToAxis:   'región entre la curva y el eje x',
                 off:              'apagado',
                 errInterval:      '✗ El intervalo necesita b > a',
                 volumeLabel:      'Volumen de revolución',
