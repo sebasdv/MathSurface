@@ -586,30 +586,7 @@ body {
     justify-content: center;
 }
 
-@media (max-width: 768px) {
-    #controls-sidebar {
-        position: fixed;
-        top: 52px;
-        right: -420px;
-        height: calc(100vh - 52px);
-        z-index: 150;
-        transition: right 0.3s ease;
-        box-shadow: var(--shadow-float);
-        width: 90vw;
-        max-width: 380px;
-    }
 
-    #controls-sidebar.active { right: 0; }
-
-    #mobile-controls-toggle { display: flex; }
-
-    #dim-overlay {
-        bottom: 5rem;
-        max-width: calc(100vw - 2rem);
-    }
-
-    .header-formula { display: none; }
-}
 
 /* ---- MODAL ---- */
 .modal-overlay {
@@ -709,3 +686,33 @@ body {
 }
 
 #volume-block .dim-label { text-transform: none; letter-spacing: 0; }
+
+/* ---- RESPONSIVE ----
+   Kept last on purpose. These overrides are single-id selectors, so they only
+   beat the base rules by source order — while this block sat mid-file, the base
+   `#dim-overlay { bottom: 1rem }` further down won and the overlay collided with
+   the mobile FAB. */
+@media (max-width: 768px) {
+    #controls-sidebar {
+        position: fixed;
+        top: 52px;
+        right: -420px;
+        height: calc(100vh - 52px);
+        z-index: 150;
+        transition: right 0.3s ease;
+        box-shadow: var(--shadow-float);
+        width: 90vw;
+        max-width: 380px;
+    }
+
+    #controls-sidebar.active { right: 0; }
+
+    #mobile-controls-toggle { display: flex; }
+
+    #dim-overlay {
+        bottom: 5rem;
+        max-width: calc(100vw - 2rem);
+    }
+
+    .header-formula { display: none; }
+}

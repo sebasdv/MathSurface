@@ -125,14 +125,14 @@
                         <div class="accordion-content" id="rev-examples-accordion">
                             <div class="accordion-body">
                                 <div class="examples-grid">
-                                    <button class="example-btn" onclick="loadRevExample('sqrt(4 - x^2)', '', -2, 2)">Sphere · √(4−x²) · V=32π/3</button>
-                                    <button class="example-btn" onclick="loadRevExample('x', '', 0, 3)">Cone · x · V=9π</button>
-                                    <button class="example-btn" onclick="loadRevExample('sqrt(x)', '', 0, 4)">Paraboloid · √x · V=8π</button>
-                                    <button class="example-btn" onclick="loadRevExample('1/x', '', 1, 4)">Horn · 1/x · V=3π/4</button>
-                                    <button class="example-btn" onclick="loadRevExample('sin(x)', '', 0, 3.14159265)">Bead · sin(x) · V=π²/2</button>
-                                    <button class="example-btn" onclick="loadRevExample('2', '1', 0, 4)">Washer · 2 &amp; 1 · V=12π</button>
-                                    <button class="example-btn" onclick="loadRevExample('sqrt(x)', 'x/2', 0, 4)">Washer · √x &amp; x/2 · V=8π/3</button>
-                                    <button class="example-btn" onclick="loadRevExample('2 + cos(f*x)', '', 0, 6)">Vase · 2+cos(f·x)</button>
+                                    <button class="example-btn" onclick="loadRevExample('sqrt(4 - x^2)', '', -2, 2, 'x')">Sphere · √(4−x²) · V=32π/3</button>
+                                    <button class="example-btn" onclick="loadRevExample('x', '', 0, 3, 'x')">Cone · x · V=9π</button>
+                                    <button class="example-btn" onclick="loadRevExample('sqrt(x)', '', 0, 4, 'x')">Paraboloid · √x · V=8π</button>
+                                    <button class="example-btn" onclick="loadRevExample('1/x', '', 1, 4, 'x')">Horn · 1/x · V=3π/4</button>
+                                    <button class="example-btn" onclick="loadRevExample('sin(x)', '', 0, 3.14159265, 'x')">Bead · sin(x) · V=π²/2</button>
+                                    <button class="example-btn" onclick="loadRevExample('2', '1', 0, 4, 'x')">Washer · 2 &amp; 1 · V=12π</button>
+                                    <button class="example-btn" onclick="loadRevExample('sqrt(x)', 'x/2', 0, 4, 'x')">Washer · √x &amp; x/2 · V=8π/3</button>
+                                    <button class="example-btn" onclick="loadRevExample('2 + cos(f*x)', '', 0, 6, 'x')">Vase · 2+cos(f·x)</button>
                                     <button class="example-btn" onclick="loadRevExample('x', '', 0, 2, 'y')">Shell · x on [0,2] · V=16π/3</button>
                                     <button class="example-btn" onclick="loadRevExample('4 - x^2', '', 0, 2, 'y')">Shell · 4−x² · V=8π</button>
                                     <button class="example-btn" onclick="loadRevExample('4', 'x^2', 0, 2, 'y')">Shell · 4 &amp; x² · V=8π</button>
@@ -879,7 +879,9 @@
 
                 const text = s.equation.trim();
                 if (!text) {
-                    s.error = { key: 'statusEmpty' };
+                    // A blank field is incomplete, not wrong — a freshly added row
+                    // showed a red error before the user had typed anything.
+                    s.error = { key: 'statusEmpty', muted: true };
                     continue;
                 }
 
@@ -1793,8 +1795,13 @@
                 tr(shell ? 'revolutionInputY' : 'revolutionInput');
         }
 
-        function loadRevExample(outer, inner, a, b, axis) {
-            if (axis && axis !== revolution.axis) { revolution.axis = axis; applyRevAxisLabels(); }
+        // `axis` defaults to 'x' rather than inheriting the active one. A preset
+        // carries the axis its advertised volume was computed for: clicking
+        // "Cone · V=9π" while in shell mode used to build the shell solid instead
+        // and quietly report 56.549, and the sphere's [-2,2] interval was rejected
+        // outright because a shell radius cannot be negative.
+        function loadRevExample(outer, inner, a, b, axis = 'x') {
+            if (axis !== revolution.axis) { revolution.axis = axis; applyRevAxisLabels(); }
             revolution.outer = outer;
             revolution.inner = inner;
             document.getElementById('rev-outer').value = outer;
@@ -1943,10 +1950,11 @@
 
                 const span = document.createElement('span');
                 if (s.error) {
-                    span.className = 'status-err';
+                    span.className = s.error.muted ? 'status-muted' : 'status-err';
                     // textContent, not innerHTML: `detail` is a parser message
                     // derived from whatever the user typed.
-                    span.textContent = tr(s.error.key) + (s.error.detail ? ' — ' + s.error.detail : '');
+                    span.textContent = tr(s.error.muted ? 'statusAwaiting' : s.error.key)
+                        + (s.error.detail ? ' — ' + s.error.detail : '');
                 } else {
                     span.className = 'status-ok';
                     span.textContent = tr('statusValid');
@@ -2254,6 +2262,7 @@
                 resumeRotation:   'Resume rotation',
                 statusValid:      '✓ Valid equation',
                 statusEmpty:      '✗ Please enter an equation',
+                statusAwaiting:   'waiting for an equation',
                 statusInvalid:    '✗ Invalid equation',
                 needSurface:      'Generate a surface first.',
                 errWebgl:         'WebGL is not available in this browser, so the 3D view cannot be shown.',
@@ -2347,6 +2356,7 @@
                 resumeRotation:   'Reanudar rotación',
                 statusValid:      '✓ Ecuación válida',
                 statusEmpty:      '✗ Escribe una ecuación',
+                statusAwaiting:   'esperando una ecuación',
                 statusInvalid:    '✗ Ecuación inválida',
                 needSurface:      'Genera una superficie primero.',
                 errWebgl:         'WebGL no está disponible en este navegador, así que no se puede mostrar la vista 3D.',
