@@ -11,3 +11,8 @@ Thumbs.db
 
 # Large binaries
 *.pdf
+
+# Artefactos de exportacion de la propia app (STL/PNG descargados al probar)
+mathsurface.stl
+mathsurface.png
+equation_3d.stl
