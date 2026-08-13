@@ -741,6 +741,9 @@
             document.getElementById('dim-y').textContent = mm(box.max.z - box.min.z);   // Three.js Z is depth
             document.getElementById('dim-z').textContent = mm(box.max.y - box.min.y);   // Three.js Y is height
             updateVolumeReadout();
+            // The warning now quotes mm, so a change of scale invalidates its text
+            // even though the geometry is untouched.
+            updateBaseWarning();
         }
 
         function updateVolumeReadout() {
@@ -1037,15 +1040,26 @@
             return worst;
         }
 
+        // Remembered so the message can be redrawn when the language or the mm
+        // scale changes without waiting for the next rebuild.
+        let lastBaseWarning = { worstDrop: 0, thickness: 0 };
+
         function updateBaseWarning(worstDrop, thickness) {
+            if (worstDrop !== undefined) lastBaseWarning = { worstDrop, thickness };
+            const { worstDrop: drop, thickness: t } = lastBaseWarning;
             const el = document.getElementById('base-warning');
-            const bad = baseMode === 'offset' && worstDrop > thickness;
+            const bad = baseMode === 'offset' && drop > t;
             el.hidden = !bad;
-            if (bad) {
-                el.textContent = tr('baseSelfIntersect')
-                    .replace('{drop}', worstDrop.toFixed(2))
-                    .replace('{t}', thickness.toFixed(2));
-            }
+            if (!bad) return;
+            // Both figures carry their unit. They are scene units, the same as the
+            // thickness slider — someone reading two bare decimals had no way to
+            // tell whether it was a length, a ratio or a percentage. The mm are
+            // spelled out too, since that is what a print is measured in.
+            el.textContent = tr('baseSelfIntersect')
+                .replace('{drop}', drop.toFixed(2))
+                .replace('{dropMm}', (drop * mmPerUnit).toFixed(1))
+                .replace('{t}', t.toFixed(2))
+                .replace('{tMm}', (t * mmPerUnit).toFixed(1));
         }
 
         function buildSurfaceMeshes(s, resolution, range, thickness, opacity, baseMode, zBase) {
@@ -2456,7 +2470,7 @@
                 baseLabel:        'Underside',
                 baseFlat:         'Flat base',
                 baseOffset:       'Offset shell',
-                baseSelfIntersect: 'The surface drops {drop} between neighbouring samples, more than the {t} thickness, so the offset shell passes through itself. Switch to a flat base, raise the thickness, or lower the Z scale.',
+                baseSelfIntersect: 'The surface drops {drop} u (≈{dropMm} mm) between neighbouring samples, more than the {t} u (≈{tMm} mm) thickness, so the offset shell passes through itself. Switch to a flat base, raise the thickness, or lower the Z scale.',
                 generate:         '▶ Generate',
                 reset:            '↺ Reset',
                 examples:         'Popular Examples',
@@ -2558,7 +2572,7 @@
                 baseLabel:        'Cara inferior',
                 baseFlat:         'Base plana',
                 baseOffset:       'Cáscara desplazada',
-                baseSelfIntersect: 'La superficie cae {drop} entre muestras vecinas, más que el grosor {t}, así que la cáscara desplazada se atraviesa a sí misma. Cambia a base plana, sube el grosor, o baja la escala Z.',
+                baseSelfIntersect: 'La superficie cae {drop} u (≈{dropMm} mm) entre muestras vecinas, más que el grosor {t} u (≈{tMm} mm), así que la cáscara desplazada se atraviesa a sí misma. Cambia a base plana, sube el grosor, o baja la escala Z.',
                 generate:         '▶ Generar',
                 reset:            '↺ Reiniciar',
                 examples:         'Ejemplos populares',
@@ -2659,6 +2673,7 @@
             applyModeControls();
             renderRevolutionStatus();
             updateVolumeReadout();
+            updateBaseWarning();
             if (fatalErrorKey) showFatalError(fatalErrorKey);
         }
 

@@ -70,18 +70,20 @@ Dos de las tres coordenadas del centroide se anulan por simetría rotacional, as
 
 El acordeón **Propiedades clásicas** trae ocho presets elegidos porque cada uno tiene una forma cerrada memorable para una de estas magnitudes, así que puedes leer el panel contra una respuesta conocida:
 
-| Preset | Anuncia |
-|---|---|
-| Catenaria `cosh(x)` en [−1,1] | `L = 2·sinh 1` |
-| `⅔x^(3/2)` en [0,3] | `L = 14/3` |
-| Semiesfera | `x̄ = 3r/8` |
-| Paraboloide | `x̄ = 2h/3` |
-| Cono desde la base (cáscara) | `ȳ = h/4` |
-| Esfera | `I = ⅖MR²` |
-| Cilindro | `I = ½MR²` |
-| Cono | `I = ³⁄₁₀MR²` |
+| Preset | Curva e intervalo | Eje | Magnitud | Forma cerrada | Valor |
+|---|---|---|---|---|---|
+| Catenaria | `cosh(x)` en [−1, 1] | X | longitud de arco | `2·sinh 1` | 2.350 |
+| Potencia 3/2 | `(2/3)*x^(3/2)` en [0, 3] | X | longitud de arco | `14/3` | 4.667 |
+| Semiesfera | `sqrt(4 - x^2)` en [0, 2] | X | centroide `x̄` | `3r/8` | 0.750 |
+| Paraboloide | `sqrt(x)` en [0, 4] | X | centroide `x̄` | `2h/3` | 2.667 |
+| Cono desde la base | `2 - x` en [0, 2] | Y | centroide `ȳ` | `h/4` | 0.500 |
+| Esfera | `sqrt(4 - x^2)` en [−2, 2] | X | `I` eje | `⅖MR²` | 53.62 |
+| Cilindro | `2` en [0, 5] | X | `I` eje | `½MR²` | 125.66 |
+| Cono | `x` en [0, 3] | X | `I` eje | `³⁄₁₀MR²` | 76.34 |
 
-Algunos reutilizan un sólido de la lista de arriba a propósito: una misma forma con varias propiedades es justamente el punto.
+Los valores están en unidades de escena: `u` para la longitud de arco y el centroide, `u⁵` para los momentos. Pulsa el preset y el panel debe mostrar exactamente esa cifra.
+
+Algunos reutilizan un sólido de la lista de arriba a propósito: una misma forma con varias propiedades es justamente el punto. El de cáscara declara su eje, porque un preset lleva el eje con el que se calculó su forma cerrada.
 
 La longitud de arco y el área **no** usan `∫√(1+f'²)`. Esa forma necesita `f'`, y donde la tangente es vertical —los polos de `√(4−x²)`, lo más probable que alguien escriba aquí— el integrando diverge en el extremo y Simpson se pasa: la semicircunferencia salía 4.18% larga y el área de la esfera 0.23% alta. En su lugar se suman cuerdas del muestreo, cuya revolución es un tronco de cono de área exacta `π(r₁+r₂)·cuerda`. La misma semicircunferencia queda dentro del 0.0001%.
 
@@ -181,18 +183,20 @@ Two of the three centroid coordinates vanish by rotational symmetry, so only the
 
 The **Classic Properties** accordion holds eight presets chosen because each has a memorable closed form for one of these quantities, so the panel can be read against a known answer:
 
-| Preset | Advertises |
-|---|---|
-| Catenary `cosh(x)` on [−1,1] | `L = 2·sinh 1` |
-| `⅔x^(3/2)` on [0,3] | `L = 14/3` |
-| Hemisphere | `x̄ = 3r/8` |
-| Paraboloid | `x̄ = 2h/3` |
-| Cone from base (shell) | `ȳ = h/4` |
-| Sphere | `I = ⅖MR²` |
-| Cylinder | `I = ½MR²` |
-| Cone | `I = ³⁄₁₀MR²` |
+| Preset | Curve and interval | Axis | Quantity | Closed form | Value |
+|---|---|---|---|---|---|
+| Catenary | `cosh(x)` on [−1, 1] | X | arc length | `2·sinh 1` | 2.350 |
+| Power 3/2 | `(2/3)*x^(3/2)` on [0, 3] | X | arc length | `14/3` | 4.667 |
+| Hemisphere | `sqrt(4 - x^2)` on [0, 2] | X | centroid `x̄` | `3r/8` | 0.750 |
+| Paraboloid | `sqrt(x)` on [0, 4] | X | centroid `x̄` | `2h/3` | 2.667 |
+| Cone from base | `2 - x` on [0, 2] | Y | centroid `ȳ` | `h/4` | 0.500 |
+| Sphere | `sqrt(4 - x^2)` on [−2, 2] | X | `I` axis | `⅖MR²` | 53.62 |
+| Cylinder | `2` on [0, 5] | X | `I` axis | `½MR²` | 125.66 |
+| Cone | `x` on [0, 3] | X | `I` axis | `³⁄₁₀MR²` | 76.34 |
 
-Some reuse a solid from the list above on purpose: one shape carrying several properties is the point.
+Values are in scene units: `u` for arc length and centroid, `u⁵` for the moments. Click the preset and the panel should read exactly that figure.
+
+Some reuse a solid from the list above on purpose: one shape carrying several properties is the point. The shell one states its axis, because a preset carries the axis its closed form was computed for.
 
 Arc length and area do **not** use `∫√(1+f'²)`. That form needs `f'`, and where the tangent is vertical — the poles of `√(4−x²)`, the most likely thing anyone types here — the integrand is unbounded at the endpoint and Simpson overshoots: the semicircle came out 4.18% long and the sphere's area 0.23% high. Chords of the sampling are summed instead, and each chord's revolution is a truncated cone whose lateral area is exactly `π(r₁+r₂)·chord`. The same semicircle lands within 0.0001%.
 
