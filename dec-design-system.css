@@ -56,6 +56,10 @@ body {
 }
 
 /* ---- HEADER / NAVBAR ---- */
+/* Allowed to wrap: at a large reader font size the brand and the button group no
+   longer fit a narrow viewport, and without wrapping they pushed the page 106px
+   wider than the screen. Growing taller instead is safe now that the mobile
+   sidebar takes its offset from the layout rather than a fixed 52px. */
 #header {
     position: sticky;
     top: 0;
@@ -68,7 +72,11 @@ body {
     justify-content: space-between;
     align-items: center;
     flex-shrink: 0;
+    flex-wrap: wrap;
+    row-gap: 0.4rem;
 }
+
+.brand { min-width: 0; }
 
 .brand {
     font-size: 1rem;
@@ -95,10 +103,14 @@ body {
 .font-mono { font-family: var(--font-mono); letter-spacing: -0.04em; }
 
 /* ---- MAIN CONTENT ---- */
+/* position: relative so the mobile sidebar can anchor to this box instead of the
+   viewport. The flex column above already places it directly under the header,
+   which is what lets the responsive rules drop their hardcoded header offset. */
 #main-content {
     display: flex;
     flex: 1;
     overflow: hidden;
+    position: relative;
 }
 
 /* ---- 3D CANVAS ---- */
@@ -693,19 +705,30 @@ body {
    `#dim-overlay { bottom: 1rem }` further down won and the overlay collided with
    the mobile FAB. */
 @media (max-width: 768px) {
+    /* Anchored to #main-content, not the viewport, so no header height appears
+       here. The previous rules assumed a 52px header; it actually measures 53px,
+       and because the header's padding is in rem it grows with the reader's font
+       size — at a 24px base it reached 75px and hid 23px of this panel behind it.
+       top/bottom: 0 against the content box cannot drift.
+
+       Slid with transform rather than `right`: it composites on the GPU, and it
+       needs no off-screen magic number to park at. #main-content clips the
+       overflow, so the parked panel cannot widen the page. */
     #controls-sidebar {
-        position: fixed;
-        top: 52px;
-        right: -420px;
-        height: calc(100vh - 52px);
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        height: auto;
         z-index: 150;
-        transition: right 0.3s ease;
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
         box-shadow: var(--shadow-float);
         width: 90vw;
         max-width: 380px;
     }
 
-    #controls-sidebar.active { right: 0; }
+    #controls-sidebar.active { transform: translateX(0); }
 
     #mobile-controls-toggle { display: flex; }
 
