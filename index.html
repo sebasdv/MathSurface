@@ -147,6 +147,31 @@
                         </div>
                     </div>
 
+                    <!-- Examples for the curve and mass properties. Each advertises
+                         the closed form it is famous for, so the second row of the
+                         panel can be read against a known answer. Some reuse a solid
+                         from the list above on purpose: one shape, several
+                         properties is the point. -->
+                    <div class="accordion-item" id="prop-examples-item" hidden>
+                        <button class="accordion-header" onclick="toggleAccordion('prop-examples')">
+                            <span data-i18n="propExamples">Classic Properties</span>
+                        </button>
+                        <div class="accordion-content" id="prop-examples-accordion">
+                            <div class="accordion-body">
+                                <div class="examples-grid">
+                                    <button class="example-btn" onclick="loadRevExample('cosh(x)', '', -1, 1, 'x')">Catenary · cosh(x) · L=2·sinh 1</button>
+                                    <button class="example-btn" onclick="loadRevExample('(2/3)*x^(3/2)', '', 0, 3, 'x')">Arc · ⅔x^(3/2) · L=14/3</button>
+                                    <button class="example-btn" onclick="loadRevExample('sqrt(4 - x^2)', '', 0, 2, 'x')">Hemisphere · x̄=3r/8</button>
+                                    <button class="example-btn" onclick="loadRevExample('sqrt(x)', '', 0, 4, 'x')">Paraboloid · x̄=2h/3</button>
+                                    <button class="example-btn" onclick="loadRevExample('2 - x', '', 0, 2, 'y')">Cone from base · ȳ=h/4</button>
+                                    <button class="example-btn" onclick="loadRevExample('sqrt(4 - x^2)', '', -2, 2, 'x')">Sphere · I=⅖MR²</button>
+                                    <button class="example-btn" onclick="loadRevExample('2', '', 0, 5, 'x')">Cylinder · I=½MR²</button>
+                                    <button class="example-btn" onclick="loadRevExample('x', '', 0, 3, 'x')">Cone · I=³⁄₁₀MR²</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Revolution mesh + Riemann controls -->
                     <div class="accordion-item" id="rev-options-item" hidden>
                         <button class="accordion-header active" onclick="toggleAccordion('rev-options')">
@@ -1918,6 +1943,7 @@
             document.getElementById('revolution-panel').hidden = surf;
             document.getElementById('examples-item').hidden = !surf;
             document.getElementById('rev-examples-item').hidden = surf;
+            document.getElementById('prop-examples-item').hidden = surf;
             document.getElementById('rev-options-item').hidden = surf;
             document.getElementById('volume-block').hidden = surf;
 
@@ -2402,6 +2428,7 @@
                 pinchNote:        'The region closes to nothing at {n} interior point(s); the solid touches itself there and a slicer may call it non-manifold.',
                 revInterval:      'Interval',
                 revExamples:      'Classic Solids',
+                propExamples:     'Classic Properties',
                 revOptions:       'Revolution & Riemann',
                 revAxial:         'Axial steps',
                 revAngular:       'Angular steps',
@@ -2503,6 +2530,7 @@
                 pinchNote:        'La región se cierra a nada en {n} punto(s) interior(es); el sólido se toca a sí mismo ahí y un slicer puede llamarlo no-manifold.',
                 revInterval:      'Intervalo',
                 revExamples:      'Sólidos clásicos',
+                propExamples:     'Propiedades clásicas',
                 revOptions:       'Revolución y Riemann',
                 revAxial:         'Pasos axiales',
                 revAngular:       'Pasos angulares',

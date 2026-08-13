@@ -68,6 +68,21 @@ Una segunda fila del panel muestra, con densidad 1 como asumen los textos de cá
 
 Dos de las tres coordenadas del centroide se anulan por simetría rotacional, así que solo se muestra la que sobrevive, la que va sobre el eje de revolución.
 
+El acordeón **Propiedades clásicas** trae ocho presets elegidos porque cada uno tiene una forma cerrada memorable para una de estas magnitudes, así que puedes leer el panel contra una respuesta conocida:
+
+| Preset | Anuncia |
+|---|---|
+| Catenaria `cosh(x)` en [−1,1] | `L = 2·sinh 1` |
+| `⅔x^(3/2)` en [0,3] | `L = 14/3` |
+| Semiesfera | `x̄ = 3r/8` |
+| Paraboloide | `x̄ = 2h/3` |
+| Cono desde la base (cáscara) | `ȳ = h/4` |
+| Esfera | `I = ⅖MR²` |
+| Cilindro | `I = ½MR²` |
+| Cono | `I = ³⁄₁₀MR²` |
+
+Algunos reutilizan un sólido de la lista de arriba a propósito: una misma forma con varias propiedades es justamente el punto.
+
 La longitud de arco y el área **no** usan `∫√(1+f'²)`. Esa forma necesita `f'`, y donde la tangente es vertical —los polos de `√(4−x²)`, lo más probable que alguien escriba aquí— el integrando diverge en el extremo y Simpson se pasa: la semicircunferencia salía 4.18% larga y el área de la esfera 0.23% alta. En su lugar se suman cuerdas del muestreo, cuya revolución es un tronco de cono de área exacta `π(r₁+r₂)·cuerda`. La misma semicircunferencia queda dentro del 0.0001%.
 
 Verificado contra veinte sólidos con volumen de forma cerrada (esfera, cono, paraboloide, cuerno `1/x`, `sin(x)`, `x²`, tres arandelas, y diez casos de cáscara incluyendo cambio de signo y curvas que se cruzan): la integral acierta al 0.0000% y la malla queda dentro del 0.21% con 64 pasos angulares, siempre cerrada y con normales hacia afuera.
@@ -163,6 +178,21 @@ A second row of the panel reports, at unit density as calculus texts assume:
 | I centroidal | about a transverse axis through the centroid |
 
 Two of the three centroid coordinates vanish by rotational symmetry, so only the surviving one — the one along the axis of revolution — is shown.
+
+The **Classic Properties** accordion holds eight presets chosen because each has a memorable closed form for one of these quantities, so the panel can be read against a known answer:
+
+| Preset | Advertises |
+|---|---|
+| Catenary `cosh(x)` on [−1,1] | `L = 2·sinh 1` |
+| `⅔x^(3/2)` on [0,3] | `L = 14/3` |
+| Hemisphere | `x̄ = 3r/8` |
+| Paraboloid | `x̄ = 2h/3` |
+| Cone from base (shell) | `ȳ = h/4` |
+| Sphere | `I = ⅖MR²` |
+| Cylinder | `I = ½MR²` |
+| Cone | `I = ³⁄₁₀MR²` |
+
+Some reuse a solid from the list above on purpose: one shape carrying several properties is the point.
 
 Arc length and area do **not** use `∫√(1+f'²)`. That form needs `f'`, and where the tangent is vertical — the poles of `√(4−x²)`, the most likely thing anyone types here — the integrand is unbounded at the endpoint and Simpson overshoots: the semicircle came out 4.18% long and the sphere's area 0.23% high. Chords of the sampling are summed instead, and each chord's revolution is a truncated cone whose lateral area is exactly `π(r₁+r₂)·chord`. The same semicircle lands within 0.0001%.
 
