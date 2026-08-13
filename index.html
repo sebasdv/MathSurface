@@ -362,6 +362,25 @@
                     <span class="dim-value" id="vol-area">—</span>
                 </div>
             </div>
+            <span class="dim-label" data-i18n="momentsLabel">Curve &amp; mass properties (density 1)</span>
+            <div class="dim-row">
+                <div class="dim-item">
+                    <span class="dim-label" data-i18n="arcLength">Arc length</span>
+                    <span class="dim-value" id="vol-arc">—</span>
+                </div>
+                <div class="dim-item">
+                    <span class="dim-label" id="centroid-label">x̄</span>
+                    <span class="dim-value" id="vol-centroid">—</span>
+                </div>
+                <div class="dim-item">
+                    <span class="dim-label" id="inertia-axis-label">I about X</span>
+                    <span class="dim-value" id="vol-inertia-axis">—</span>
+                </div>
+                <div class="dim-item">
+                    <span class="dim-label" data-i18n="inertiaCentroid">I centroidal</span>
+                    <span class="dim-value" id="vol-inertia-centroid">—</span>
+                </div>
+            </div>
             <div id="pinch-note" hidden></div>
         </div>
     </div>
@@ -716,6 +735,20 @@
             // u³ -> mm³ -> cm³. cm³ is what a slicer quotes for filament.
             set('vol-printed', (m.meshVolume * mmPerUnit ** 3 / 1000).toFixed(2) + ' cm³');
             set('vol-area', m.area.toFixed(2) + ' u²');
+
+            const shell = revolution.axis === 'y';
+            set('vol-arc', m.arc.toFixed(3) + ' u');
+            // Only one coordinate survives the rotational symmetry, and it lies on
+            // the axis of revolution — so name it rather than printing a triple.
+            document.getElementById('centroid-label').textContent = shell ? 'ȳ' : 'x̄';
+            // A symmetric solid lands on -0.0000000001 and printed as "-0.000",
+            // which reads like a defect. Anything below the displayed precision is
+            // shown as plain zero.
+            const c = Math.abs(m.centroid) < 5e-4 ? 0 : m.centroid;
+            set('vol-centroid', c.toFixed(3) + ' u');
+            document.getElementById('inertia-axis-label').textContent = tr(shell ? 'inertiaAxisY' : 'inertiaAxisX');
+            set('vol-inertia-axis', m.inertiaAxis.toFixed(2) + ' u⁵');
+            set('vol-inertia-centroid', m.inertiaCentroid.toFixed(2) + ' u⁵');
 
             // An interior pinch is faithful geometry — the region closes to nothing
             // there, so the solid touches itself along a circle — but it leaves a
@@ -1511,6 +1544,49 @@
             return s * h / 3;
         }
 
+        // Arc length and lateral area of one revolved curve, from a single walk
+        // along a fine sampling.
+        //
+        // Deliberately NOT the textbook ∫sqrt(1+f'²) form. That needs f', and where
+        // the tangent is vertical — the poles of sqrt(4−x²), the most likely thing
+        // anyone types here — the integrand is unbounded at the endpoint and
+        // Simpson overshoots: the semicircle came out 4.18% long, and the sphere's
+        // area 0.23% high at the default step count. Chords have no derivative to
+        // blow up and converge from below: the same semicircle lands within
+        // 0.00001%.
+        //
+        // Each chord's revolution is a truncated cone, whose lateral area is
+        // exactly pi(r1+r2)·chord. The radius is the curve value about X, and the
+        // abscissa about Y, which is the only difference between the two methods.
+        //
+        // The sample count is fixed rather than tied to the mesh resolution: these
+        // numbers have no mesh counterpart to compare against, so there is no reason
+        // to inherit its coarseness.
+        //
+        // 4000 rather than more because each sample evaluates a compiled math.js
+        // expression, which dominates the rebuild — at 20000 the two walks alone
+        // added 40k evaluations and pushed a rebuild from 27 ms to 98 ms. At 4000
+        // the semicircle's arc is off by 0.0001% and its area by 0.00002%, both far
+        // under the three decimals shown.
+        const CURVE_WALK_SAMPLES = 4000;
+
+        function curveWalk(fn, a, b, shell, samples = CURVE_WALK_SAMPLES) {
+            const h = (b - a) / samples;
+            let arc = 0, area = 0;
+            let px = a, py = fn(a);
+            for (let i = 1; i <= samples; i++) {
+                const x = a + i * h;
+                const y = fn(x);
+                const chord = Math.hypot(x - px, y - py);
+                arc += chord;
+                const r1 = shell ? Math.abs(px) : Math.abs(py);
+                const r2 = shell ? Math.abs(x) : Math.abs(y);
+                area += Math.PI * (r1 + r2) * chord;
+                px = x; py = y;
+            }
+            return { arc, area };
+        }
+
         // The n disks or washers the integral is summing, drawn as open-ended
         // cylinders at the midpoint rule. This is the part that makes the integral
         // visible: raise n and watch them close on the smooth solid.
@@ -1696,31 +1772,76 @@
                 ? 2 * Math.PI * simpson(t => t * (hi(t) - lo(t)), a, b, axialSteps)
                 : Math.PI * simpson(t => hi(t) ** 2 - lo(t) ** 2, a, b, axialSteps);
 
-            // Total surface area, not just the swept sheets. The lateral part is
-            // 2 pi ∫ |f| sqrt(1 + f'²) for a radius curve, or 2 pi ∫ x sqrt(1 + f'²)
-            // for a shell sheet; the flat ends have to be added on top. Omitting
-            // them understated a cylinder by its two caps (25.13 of 87.96), a cone
-            // by its base and a shell by its wall — the sphere matched only because
-            // it has no flat ends at all.
-            const d = Math.max(1e-6, (b - a) * 1e-6);
-            const areaOf = fn => 2 * Math.PI * simpson(t => {
-                const fp = (fn(t + d) - fn(t - d)) / (2 * d);
-                const weight = shell ? Math.abs(t) : Math.abs(fn(t));
-                return weight * Math.sqrt(1 + fp * fp);
-            }, a + d, b - d, axialSteps);
+            // Arc length and lateral area both come from one walk along the
+            // sampled curve. See curveWalk for why chords beat the sqrt(1+f'²)
+            // integral here.
+            const walkHi = curveWalk(hi, a, b, shell);
+            const walkLo = curveWalk(lo, a, b, shell);
+            const twoCurves = !!innerFn || shell;
 
-            const lateral = areaOf(hi) + (innerFn || shell ? areaOf(lo) : 0);
+            // Total surface area, not just the swept sheets. The flat ends have to
+            // be added on top: omitting them understated a cylinder by its two caps
+            // (25.13 of 87.96), a cone by its base and a shell by its wall — the
+            // sphere matched only because it has no flat ends at all.
             // Disk/washer: an annular cap at each end. Shell: a cylindrical wall at
             // each radius. Both vanish on their own where the region closes.
             const ends = shell
                 ? 2 * Math.PI * b * (hi(b) - lo(b)) + 2 * Math.PI * a * (hi(a) - lo(a))
                 : Math.PI * (hi(a) ** 2 - lo(a) ** 2) + Math.PI * (hi(b) ** 2 - lo(b) ** 2);
-            const area = lateral + Math.abs(ends);
+            const area = walkHi.area + (twoCurves ? walkLo.area : 0) + Math.abs(ends);
+
+            // Arc length of the curves the user actually typed — the second one
+            // only counts when they supplied it. A blank inner box means the region
+            // runs to the axis, and the axis is not part of anyone's answer to
+            // "find the arc length of this curve".
+            const arc = walkHi.arc + (innerFn ? walkLo.arc : 0);
+
+            // Unit density, as calculus texts assume. Two of the three centroid
+            // coordinates vanish by rotational symmetry; the surviving one is along
+            // the axis of revolution.
+            //   disk   x̄ = (pi/V) ∫ x (hi² − lo²) dx
+            //   shell  ȳ = (pi/V) ∫ x (hi² − lo²) dx
+            // The same integrand for different reasons: in the shell case a band's
+            // own centroid sits at (hi+lo)/2 and 2pi x (hi−lo)·(hi+lo)/2 collapses
+            // to pi x (hi²−lo²).
+            // Smooth polynomial integrands in hi/lo, so Simpson converges fast; 600
+            // is already past the displayed precision and keeps the math.js call
+            // count down.
+            const MOMENT_STEPS = Math.max(axialSteps, 600);
+            const firstMoment = Math.PI * simpson(t => t * (hi(t) ** 2 - lo(t) ** 2), a, b, MOMENT_STEPS);
+            const centroid = integral !== 0 ? firstMoment / integral : 0;
+
+            // About the axis of revolution.
+            //   disk   I = (pi/2) ∫ (hi⁴ − lo⁴) dx   — a washer slice contributes
+            //                                          ½·dm·(R²+r²)
+            //   shell  I = 2pi ∫ x³ (hi − lo) dx     — every point of a band is at
+            //                                          radius x
+            const inertiaAxis = shell
+                ? 2 * Math.PI * simpson(t => t ** 3 * (hi(t) - lo(t)), a, b, MOMENT_STEPS)
+                : (Math.PI / 2) * simpson(t => hi(t) ** 4 - lo(t) ** 4, a, b, MOMENT_STEPS);
+
+            // About a transverse axis. Computed about the origin first, because
+            // that is where the per-slice formulae are simplest, then shifted to
+            // the centroid with the parallel-axis theorem.
+            const inertiaOrigin = shell
+                ? simpson(t => {
+                      const h = hi(t) - lo(t), mid = (hi(t) + lo(t)) / 2;
+                      // A thin cylindrical band about a diameter through its own
+                      // centre is dm(r²/2 + h²/12); mid² carries it to y = 0.
+                      return 2 * Math.PI * t * h * (t * t / 2 + h * h / 12 + mid * mid);
+                  }, a, b, MOMENT_STEPS)
+                : simpson(t => (Math.PI / 4) * (hi(t) ** 4 - lo(t) ** 4)
+                             + Math.PI * (hi(t) ** 2 - lo(t) ** 2) * t * t, a, b, MOMENT_STEPS);
+            const inertiaCentroid = inertiaOrigin - integral * centroid * centroid;
 
             revolution.metrics = {
                 integral,
                 meshVolume: geometryVolume(geometry),
                 area,
+                arc,
+                centroid,
+                inertiaAxis,
+                inertiaCentroid,
                 pinches: detectPinches(hi, lo, a, b, axialSteps)
             };
 
@@ -2295,6 +2416,11 @@
                 volMesh:          'Mesh',
                 volPrint:         'Printed',
                 volArea:          'Surface area',
+                momentsLabel:     'Curve & mass properties (density 1)',
+                arcLength:        'Arc length',
+                inertiaAxisX:     'I about X',
+                inertiaAxisY:     'I about Y',
+                inertiaCentroid:  'I centroidal',
                 addSurface:       '+ Add surface',
                 removeSurface:    'Remove this surface',
                 hideSurface:      'Hide this surface',
@@ -2391,6 +2517,11 @@
                 volMesh:          'Malla',
                 volPrint:         'Impreso',
                 volArea:          'Área de superficie',
+                momentsLabel:     'Propiedades de curva y masa (densidad 1)',
+                arcLength:        'Longitud de arco',
+                inertiaAxisX:     'I respecto a X',
+                inertiaAxisY:     'I respecto a Y',
+                inertiaCentroid:  'I centroidal',
                 addSurface:       '+ Agregar superficie',
                 removeSurface:    'Quitar esta superficie',
                 hideSurface:      'Ocultar esta superficie',

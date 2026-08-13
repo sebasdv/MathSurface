@@ -56,6 +56,20 @@ El panel de volumen muestra dos números que se calculan por caminos independien
 
 Que converjan valida la malla; la diferencia que queda es el error de facetado y se encoge al subir los pasos angulares. El slider **n de Riemann** dibuja los n discos o arandelas que la integral está sumando, para ver la convergencia.
 
+### Propiedades de curva y masa
+Una segunda fila del panel muestra, con densidad 1 como asumen los textos de cálculo:
+
+| Magnitud | Fórmula |
+|---|---|
+| Longitud de arco | de las curvas que escribiste (no del eje) |
+| Centroide | disco `x̄ = (π/V)∫x(f²−g²)dx` · cáscara `ȳ` con el mismo integrando |
+| I respecto al eje de revolución | disco `(π/2)∫(f⁴−g⁴)dx` · cáscara `2π∫x³(f−g)dx` |
+| I centroidal | respecto a un eje transversal por el centroide |
+
+Dos de las tres coordenadas del centroide se anulan por simetría rotacional, así que solo se muestra la que sobrevive, la que va sobre el eje de revolución.
+
+La longitud de arco y el área **no** usan `∫√(1+f'²)`. Esa forma necesita `f'`, y donde la tangente es vertical —los polos de `√(4−x²)`, lo más probable que alguien escriba aquí— el integrando diverge en el extremo y Simpson se pasa: la semicircunferencia salía 4.18% larga y el área de la esfera 0.23% alta. En su lugar se suman cuerdas del muestreo, cuya revolución es un tronco de cono de área exacta `π(r₁+r₂)·cuerda`. La misma semicircunferencia queda dentro del 0.0001%.
+
 Verificado contra veinte sólidos con volumen de forma cerrada (esfera, cono, paraboloide, cuerno `1/x`, `sin(x)`, `x²`, tres arandelas, y diez casos de cáscara incluyendo cambio de signo y curvas que se cruzan): la integral acierta al 0.0000% y la malla queda dentro del 0.21% con 64 pasos angulares, siempre cerrada y con normales hacia afuera.
 
 Cuando la región se cierra a nada en un punto **interior**, el sólido se toca a sí mismo en un círculo. Eso es geometría fiel, no un error, pero deja una arista no-manifold que algunos slicers marcan; la app avisa cuántos puntos así encontró.
@@ -137,6 +151,20 @@ The volume panel shows two numbers reached by independent routes:
 - The volume of the generated mesh, by the divergence theorem.
 
 Their agreement validates the mesh; the remaining gap is faceting error and shrinks as the angular steps rise. The **Riemann n** slider draws the n disks or washers the integral is summing, so the convergence is visible.
+
+### Curve and mass properties
+A second row of the panel reports, at unit density as calculus texts assume:
+
+| Quantity | Formula |
+|---|---|
+| Arc length | of the curves you typed (not of the axis) |
+| Centroid | disk `x̄ = (π/V)∫x(f²−g²)dx` · shell `ȳ` from the same integrand |
+| I about the axis of revolution | disk `(π/2)∫(f⁴−g⁴)dx` · shell `2π∫x³(f−g)dx` |
+| I centroidal | about a transverse axis through the centroid |
+
+Two of the three centroid coordinates vanish by rotational symmetry, so only the surviving one — the one along the axis of revolution — is shown.
+
+Arc length and area do **not** use `∫√(1+f'²)`. That form needs `f'`, and where the tangent is vertical — the poles of `√(4−x²)`, the most likely thing anyone types here — the integrand is unbounded at the endpoint and Simpson overshoots: the semicircle came out 4.18% long and the sphere's area 0.23% high. Chords of the sampling are summed instead, and each chord's revolution is a truncated cone whose lateral area is exactly `π(r₁+r₂)·chord`. The same semicircle lands within 0.0001%.
 
 Verified against twenty solids with closed-form volumes (sphere, cone, paraboloid, `1/x` horn, `sin(x)`, `x²`, three washers, and ten shell cases including sign changes and crossing curves): the integral is exact to 0.0000% and the mesh lands within 0.21% at 64 angular steps, always closed and outward-facing.
 
