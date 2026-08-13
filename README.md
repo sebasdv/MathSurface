@@ -2,7 +2,8 @@
 
 **Autor / Author:** Sebastián Duarte Villanueva ([@sebasdv](https://github.com/sebasdv))  
 **Co-author:** Claude.ai  
-**Live demo:** https://sebasdv.github.io/MathSurface/
+**Live demo:** https://sebasdv.github.io/MathSurface/  
+**Versión / Version:** 2.0 — ver [CHANGELOG.md](CHANGELOG.md)
 
 ---
 
