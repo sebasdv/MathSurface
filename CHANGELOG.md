@@ -5,6 +5,17 @@ Las versiones se marcan con tags de git: `git tag -l`.
 
 ---
 
+## [Sin publicar]
+
+### Añadido
+
+- **Medición de uso** con Google Analytics (misma propiedad que dec.uai.cl).
+  Además de las visitas registra `select_preset`, `set_mode`, `export_stl` y
+  `export_png`, cada uno con el modo y si la app se abrió dentro de otro sitio
+  (`embedded`).
+
+---
+
 ## [2.0] — 2026-08-13
 
 La aplicación pasa de un modo a dos. Además de graficar superficies `z = f(x, y)`,

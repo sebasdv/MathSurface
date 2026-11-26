@@ -20,6 +20,25 @@
          to leave unpinned while the two scripts are not. -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="dec-design-system.css">
+    <!-- Usage analytics: same GA4 property as dec.uai.cl, so the MathSurface tab
+         and what people do inside it land in one report (filter by hostname
+         mathsurface.sebasdv.io). No SRI here, unlike the scripts below: Google
+         serves gtag.js dynamically and does not publish a hash. If it never
+         loads, track() just queues into dataLayer and the app is unaffected.
+         cookie_flags lets the _ga cookie survive inside the cross-site iframe
+         on dec.uai.cl; where the browser blocks it anyway (Safari), events
+         still count, only unique users are overcounted. -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YVSV9LTV38"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-YVSV9LTV38', { cookie_flags: 'SameSite=None;Secure' });
+        // embedded: opened inside another site (dec.uai.cl) vs. directly.
+        function track(name, params) {
+            gtag('event', name, Object.assign({ embedded: window.top !== window.self }, params));
+        }
+    </script>
 </head>
 <body>
     <div id="app-container">
@@ -1928,6 +1947,7 @@
         function setMode(mode) {
             if (mode === appMode) return;
             appMode = mode;
+            track('set_mode', { mode });
 
             if (mode === 'revolution') { clearIntersections(); for (const s of surfaces) clearSurfaceMeshes(s); }
             else clearRevolution();
@@ -2019,6 +2039,7 @@
         // and quietly report 56.549, and the sphere's [-2,2] interval was rejected
         // outright because a shell radius cannot be negative.
         function loadRevExample(outer, inner, a, b, axis = 'x') {
+            track('select_preset', { mode: 'revolution', preset: `${outer} | ${inner} [${a},${b}] ${axis}` });
             if (axis !== revolution.axis) { revolution.axis = axis; applyRevAxisLabels(); }
             revolution.outer = outer;
             revolution.inner = inner;
@@ -2032,6 +2053,7 @@
         function loadExample(equation) {
             const s = surfaceById(activeSurfaceId) || surfaces[0];
             if (!s) return;
+            track('select_preset', { mode: 'surfaces', preset: equation });
             s.equation = equation;
             renderSurfaceList();
             regenerateAll();
@@ -2304,6 +2326,7 @@
                 return;
             }
 
+            track('export_png', { mode: appMode });
             const canvas = renderer.domElement;
             const width = canvas.clientWidth;
             const height = canvas.clientHeight;
@@ -2402,6 +2425,7 @@
             });
 
             downloadBlob(new Blob([buffer], { type: 'model/stl' }), 'mathsurface.stl');
+            track('export_stl', { mode: appMode, triangles });
         }
 
         // Accordion toggle
